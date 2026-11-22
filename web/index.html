@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mikrot VPN</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="top"><strong>Mikrot <span>VPN</span></strong><span id="mode"></span></header>
+  <main>
+    <section class="summary" aria-labelledby="active">
+      <div><p class="caption">Активный TCP-выход для VPN-правил</p><h1 id="active">Загрузка…</h1><p id="active-udp"></p><p id="health"></p></div>
+      <button id="probe" type="button">Проверить узлы</button>
+    </section>
+    <p id="notice" role="status" aria-live="polite"></p>
+    <div class="grid">
+      <section class="panel" aria-labelledby="subscription-title">
+        <h2 id="subscription-title">Подписка</h2>
+        <p id="subscription-status"></p>
+        <form id="subscription" autocomplete="off">
+          <label>URL подписки<input id="feed-url" type="password" required placeholder="https://…" maxlength="8192" autocomplete="new-password"></label>
+          <div class="actions"><button type="submit">Загрузить</button><button id="refresh" class="secondary" type="button">Обновить</button><button id="remove" class="secondary" type="button">Удалить</button></div>
+        </form>
+      </section>
+      <section class="panel" aria-labelledby="servers-title">
+        <h2 id="servers-title">Серверы <span class="caption" id="count"></span></h2>
+        <div id="servers" class="servers"></div>
+      </section>
+    </div>
+    <form id="settings">
+      <section class="panel" aria-labelledby="rules-title">
+        <h2 id="rules-title">Маршрутизация</h2>
+        <p>Правила проверяются сверху вниз. Применяется первое совпадение.</p>
+        <div id="rules"></div>
+        <div class="actions">
+          <button id="add-rule" class="secondary" type="button" disabled>Добавить правило</button>
+          <button id="add-service" class="secondary" type="button" disabled>Добавить сервис</button>
+          <label class="inline">Без совпадений<select id="default-action"><option value="DIRECT">Напрямую</option><option value="VPN">Через VPN</option></select></label>
+        </div>
+        <label id="dns-option" class="toggle" hidden><input id="dns-mapping" type="checkbox">Использовать DNS контейнера для сопоставления IP с доменами</label>
+        <p id="dns-help" hidden>Укажи IP контейнера в настройках DNS нужных клиентов. Контейнер будет возвращать обычные IPv4-адреса.</p>
+      </section>
+      <section class="panel" aria-labelledby="balance-title">
+        <h2 id="balance-title">Автовыбор сервера</h2>
+        <div class="fields">
+          <label class="wide">URL проверки<input type="url" id="probe-url" required></label>
+          <label>Интервал, с<input type="number" id="interval" min="15" max="600" required></label>
+          <label>Тайм-аут, мс<input type="number" id="timeout" min="500" max="10000" required></label>
+          <label>Порог переключения, мс<input type="number" id="tolerance" min="0" max="500" required></label>
+          <label>Обновление подписки, ч<input type="number" id="refresh-hours" min="0" max="168" required></label>
+        </div>
+        <p>Переключение происходит при улучшении на величину больше порога или при отказе текущего узла. Ноль часов отключает автообновление.</p>
+        <button id="save" type="submit" disabled>Сохранить настройки</button>
+      </section>
+    </form>
+  </main>
+  <template id="rule-template">
+    <div class="rule">
+      <label>Условие<select class="match"><option value="DOMAIN">Домен</option><option value="DOMAIN-SUFFIX">Домен и поддомены</option><option value="IP-CIDR">IP назначения</option><option value="SRC-IP-CIDR">IP устройства</option><option value="SERVICE">Известный сервис</option></select></label>
+      <div>
+        <label class="manual">Значение<input class="value" required maxlength="253" placeholder="example.com"></label>
+        <label class="preset" hidden>Сервис<select class="service"></select></label>
+      </div>
+      <label>Маршрут<select class="action"><option value="VPN">Через VPN</option><option value="DIRECT">Напрямую</option></select></label>
+      <div class="order"><button type="button" class="secondary up" aria-label="Выше">↑</button><button type="button" class="secondary down" aria-label="Ниже">↓</button><button type="button" class="secondary delete" aria-label="Удалить правило">×</button></div>
+      <details class="preview" hidden><summary>Домены</summary><div class="domains"></div></details>
+    </div>
+  </template>
+</body>
+</html>

@@ -1,0 +1,9 @@
+*
+!Dockerfile
+!go.mod
+!go.sum
+!*.go
+!web/
+!web/**
+!services/
+!services/**
