@@ -37,6 +37,6 @@ COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifica
 COPY --from=build /out/mikrot /out/mihomo /bin/
 COPY --from=build /out/Mihomo-LICENSE /usr/share/licenses/mihomo/LICENSE
 COPY --from=build /src/services/LICENSE /usr/share/licenses/domain-list-community/LICENSE
-ENV MIKROT_CORE=/bin/mihomo MIKROT_DATA=/data MIKROT_LISTEN=0.0.0.0:8080 MIKROT_TUN=1 GOMEMLIMIT=48MiB
+ENV MIKROTIK_CORE=/bin/mihomo MIKROTIK_DATA=/data MIKROTIK_LISTEN=0.0.0.0:8080 MIKROTIK_TUN=1 GOMEMLIMIT=48MiB
 EXPOSE 8080
 ENTRYPOINT ["/bin/mikrot"]

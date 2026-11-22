@@ -42,11 +42,11 @@ func main() {
 
 func run() error {
 	mihomoLog.SetLevel(mihomoLog.SILENT)
-	password := os.Getenv("MIKROT_PASSWORD")
+	password := os.Getenv("MIKROTIK_PASSWORD")
 	if len(password) < 12 {
-		return errors.New("задайте MIKROT_PASSWORD длиной от 12 символов")
+		return errors.New("задайте MIKROTIK_PASSWORD длиной от 12 символов")
 	}
-	dir, err := filepath.Abs(env("MIKROT_DATA", "data"))
+	dir, err := filepath.Abs(env("MIKROTIK_DATA", "data"))
 	if err != nil {
 		return err
 	}
@@ -61,10 +61,10 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("не удалось прочитать файл настроек: %w", err)
 	}
-	tun := env("MIKROT_TUN", "0") == "1"
+	tun := env("MIKROTIK_TUN", "0") == "1"
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	coreDone, err := startCore(ctx, env("MIKROT_CORE", "mihomo"), coreDir, s, tun, api)
+	coreDone, err := startCore(ctx, env("MIKROTIK_CORE", "mihomo"), coreDir, s, tun, api)
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func run() error {
 		probeNow: make(chan struct{}, 1), refreshNow: make(chan struct{}, 1)}
 	go m.probeLoop(ctx)
 	go m.refreshLoop(ctx)
-	server := &http.Server{Addr: env("MIKROT_LISTEN", "127.0.0.1:8080"), Handler: webHandler(m, password),
+	server := &http.Server{Addr: env("MIKROTIK_LISTEN", "127.0.0.1:8080"), Handler: webHandler(m, password),
 		ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 65 * time.Second, IdleTimeout: 60 * time.Second}
 	webDone := make(chan error, 1)
 	go func() { webDone <- server.ListenAndServe() }()
