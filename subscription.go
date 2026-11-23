@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"net/netip"
@@ -23,6 +26,13 @@ import (
 
 const maxNodes = 64
 const maxFeed = 2 << 20
+
+var (
+	errNoSubscriptionNodes  = errors.New("подписка не содержит поддерживаемых узлов")
+	errSubscriptionHTML     = errors.New("сервер вернул веб-страницу вместо подписки")
+	errSubscriptionAddress  = errors.New("домен подписки не имеет разрешённого публичного адреса")
+	errSubscriptionRedirect = errors.New("сервер подписки вернул недопустимое перенаправление")
+)
 
 type node struct {
 	ID      string
@@ -84,7 +94,7 @@ func parseSubscription(data []byte) ([]node, error) {
 		nodes = append(nodes, node{ID: id, Label: label, Kind: kind, Options: options})
 	}
 	if len(nodes) == 0 {
-		return nil, errors.New("подписка не содержит поддерживаемых узлов")
+		return nil, errNoSubscriptionNodes
 	}
 	return nodes, nil
 }
@@ -117,6 +127,7 @@ func subscriptionClient() *http.Client {
 			return nil, err
 		}
 		dialer := net.Dialer{Timeout: 6 * time.Second}
+		var dialErr error
 		for _, candidate := range addresses {
 			if !publicAddress(candidate) {
 				continue
@@ -125,17 +136,21 @@ func subscriptionClient() *http.Client {
 			if err == nil {
 				return conn, nil
 			}
+			dialErr = err
 		}
-		return nil, errors.New("сервер подписки недоступен по публичному адресу")
+		if dialErr != nil {
+			return nil, dialErr
+		}
+		return nil, errSubscriptionAddress
 	}
 	return &http.Client{
 		Transport: transport, Timeout: 20 * time.Second,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if _, err := remoteURL(req.URL.String()); err != nil {
-				return err
+				return errSubscriptionRedirect
 			}
 			if len(via) >= 5 || (via[0].URL.Scheme == "https" && req.URL.Scheme != "https") {
-				return errors.New("недопустимое перенаправление подписки")
+				return errSubscriptionRedirect
 			}
 			return nil
 		},
@@ -147,18 +162,36 @@ func fetchSubscription(ctx context.Context, client *http.Client, raw string) ([]
 	if err != nil {
 		return nil, err
 	}
+	// Remnawave's default rules return Base64 to unmatched clients and YAML to Mihomo.
+	ctx, cancel := context.WithTimeout(ctx, 25*time.Second)
+	defer cancel()
+	nodes, err := fetchSubscriptionFormat(ctx, client, u, "MikroTikVPN/1.0")
+	if errors.Is(err, errNoSubscriptionNodes) || errors.Is(err, errSubscriptionHTML) {
+		nodes, err = fetchSubscriptionFormat(ctx, client, u, "mihomo/1.19.32")
+	}
+	return nodes, err
+}
+
+func fetchSubscriptionFormat(ctx context.Context, client *http.Client, u *url.URL, agent string) ([]node, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, errors.New("не удалось подготовить запрос подписки")
 	}
-	req.Header.Set("User-Agent", "mihomo/1.19.32")
+	req.Header.Set("User-Agent", agent)
 	res, err := client.Do(req)
 	if err != nil {
-		return nil, errors.New("не удалось скачать подписку")
+		return nil, subscriptionRequestError(err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("сервер подписки ответил HTTP %d", res.StatusCode)
+	}
+	if strings.EqualFold(res.Header.Get("x-hwid-not-supported"), "true") {
+		return nil, errors.New("сервер подписки требует зарегистрированный идентификатор устройства (HWID)")
+	}
+	contentType, _, _ := mime.ParseMediaType(res.Header.Get("Content-Type"))
+	if contentType == "text/html" {
+		return nil, errSubscriptionHTML
 	}
 	data, err := io.ReadAll(io.LimitReader(res.Body, maxFeed+1))
 	if err != nil {
@@ -168,4 +201,28 @@ func fetchSubscription(ctx context.Context, client *http.Client, raw string) ([]
 		return nil, errors.New("ответ подписки больше 2 МиБ")
 	}
 	return parseSubscription(data)
+}
+
+func subscriptionRequestError(err error) error {
+	// net/http errors can embed the full URL, including the subscription token.
+	var dns *net.DNSError
+	var cert *tls.CertificateVerificationError
+	var unknownCA x509.UnknownAuthorityError
+	var invalidCert x509.CertificateInvalidError
+	var invalidHost x509.HostnameError
+	var network net.Error
+	switch {
+	case errors.Is(err, errSubscriptionAddress):
+		return errSubscriptionAddress
+	case errors.Is(err, errSubscriptionRedirect):
+		return errSubscriptionRedirect
+	case errors.As(err, &dns):
+		return errors.New("контейнер не смог разрешить домен подписки через DNS")
+	case errors.As(err, &cert), errors.As(err, &unknownCA), errors.As(err, &invalidCert), errors.As(err, &invalidHost):
+		return errors.New("не удалось проверить HTTPS-сертификат сервера подписки")
+	case errors.Is(err, context.DeadlineExceeded), errors.As(err, &network) && network.Timeout():
+		return errors.New("сервер подписки не ответил вовремя из сети контейнера")
+	default:
+		return errors.New("контейнер не смог подключиться к серверу подписки")
+	}
 }

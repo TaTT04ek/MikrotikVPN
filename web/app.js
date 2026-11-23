@@ -156,11 +156,17 @@ async function mutate(button, path, method, data, message, after) {
   await loadStatus().catch((err) => notice(err.message, true));
 }
 
+function showFeed(visible) {
+  el("feed-url").type = visible ? "url" : "password";
+  el("show-feed").textContent = visible ? "Скрыть" : "Показать";
+}
+el("show-feed").addEventListener("click", () => showFeed(el("feed-url").type === "password"));
 el("subscription").addEventListener("submit", (event) => {
   event.preventDefault();
   el("subscription-help").hidden = true;
   mutate(event.submitter, "/api/subscription", "PUT", { url: el("feed-url").value }, "Подписка загружена.", () => {
     el("feed-url").value = "";
+    showFeed(false);
   });
 });
 el("feed-url").addEventListener("input", () => { el("subscription-help").hidden = true; });

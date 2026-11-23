@@ -63,7 +63,12 @@
         <h2 id="subscription-title">Подписка</h2>
         <p id="subscription-status"></p>
         <form id="subscription" autocomplete="off">
-          <label>URL подписки<input id="feed-url" type="password" inputmode="url" required placeholder="https://…" maxlength="8192" autocomplete="new-password"></label>
+          <label for="feed-url">URL подписки</label>
+          <div class="feed-input">
+            <input id="feed-url" type="password" inputmode="url" required placeholder="https://…" maxlength="8192" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="feed-hint">
+            <button id="show-feed" class="secondary" type="button" aria-controls="feed-url">Показать</button>
+          </div>
+          <p class="chart-caption" id="feed-hint">Ссылка Remnawave подходит. Она может содержать токен доступа.</p>
           <p class="chart-caption" id="subscription-help" hidden>Проверьте ссылку и доступ к серверу подписки из сети роутера.</p>
           <div class="actions"><button type="submit">Загрузить</button><button id="refresh" class="secondary" type="button">Обновить</button><button id="remove" class="secondary" type="button">Удалить</button></div>
         </form>
