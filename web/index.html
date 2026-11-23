@@ -90,6 +90,11 @@
         </div>
         <label id="dns-option" class="toggle" hidden><input id="dns-mapping" type="checkbox">Использовать DNS контейнера для сопоставления IP с доменами</label>
         <p id="dns-help" hidden>Укажи IP контейнера в настройках DNS нужных клиентов. Контейнер будет возвращать обычные IPv4-адреса.</p>
+        <section class="telegram-list" aria-labelledby="telegram-title">
+          <div class="panel-title"><h3 id="telegram-title">CIDR Telegram</h3><button id="refresh-telegram" class="secondary" type="button">Обновить CIDR</button></div>
+          <p id="telegram-status" class="caption">Загрузка списка…</p>
+          <details class="preview"><summary>Диапазоны IPv4</summary><div class="domains" id="telegram-cidrs"></div></details>
+        </section>
       </section>
       <section class="panel" aria-labelledby="balance-title">
         <h2 id="balance-title">Автовыбор сервера</h2>

@@ -70,9 +70,10 @@ function addRule(rule = { match: "DOMAIN-SUFFIX", value: "", action: "VPN" }) {
     row.querySelector(".preset").hidden = !isService;
     value.disabled = isService;
     value.placeholder = match.value.includes("CIDR") ? "192.0.2.0/24" : "example.com";
-    preview.hidden = !isService || !preset;
-    preview.querySelector("summary").textContent = preset ? `Домены (${preset.domains.length})` : "Домены";
-    preview.querySelector(".domains").textContent = preset?.domains.join(" · ") ?? "";
+    const domains = preset?.domains ?? [];
+    preview.hidden = !isService || !domains.length;
+    preview.querySelector("summary").textContent = `Домены (${domains.length})`;
+    preview.querySelector(".domains").textContent = domains.join(" · ");
   }
   match.addEventListener("change", showCondition);
   service.addEventListener("change", showCondition);
@@ -105,6 +106,13 @@ async function loadStatus() {
     ? `Проверено ${checked}${selected ? "" : " · доступных VPN-серверов нет"}` : "Ожидается проверка узлов";
   el("health-dot").classList.toggle("online", Boolean(!data.coreError && selected));
   updateDashboard(data, selected, selectedUdp);
+  if (data.telegram) {
+    const { cidrs, error, updatedAt } = data.telegram;
+    const updated = timestamp(updatedAt);
+    const summary = `${cidrs.length} диапазонов IPv4 · ${updated ? `обновлено ${updated}` : "встроенный список"}`;
+    el("telegram-status").textContent = error ? `${summary}. ${error}.` : summary;
+    el("telegram-cidrs").textContent = cidrs.join(" · ");
+  }
   const updated = timestamp(data.updatedAt);
   el("subscription-status").textContent = data.refreshError || (data.subscribed
     ? updated ? `Обновлено ${updated}` : "Подписка сохранена" : "Подписка не добавлена");
@@ -177,6 +185,7 @@ el("remove").addEventListener("click", (event) => {
   }
 });
 el("probe").addEventListener("click", (event) => mutate(event.currentTarget, "/api/probe", "POST", {}, "Проверка запущена."));
+el("refresh-telegram").addEventListener("click", (event) => mutate(event.currentTarget, "/api/services/telegram/refresh", "POST", {}, "Список CIDR Telegram обновлён."));
 el("add-rule").addEventListener("click", () => { addRule(); updateOrder(); });
 el("add-service").addEventListener("click", () => {
   addRule({ match: "SERVICE", value: catalog[0].id, action: "VPN" });

@@ -39,6 +39,7 @@ var servicePresets = []servicePreset{
 	newPreset("youtube", "YouTube", youtubeDomains),
 	newPreset("github", "GitHub", githubDomains),
 	newPreset("discord", "Discord", discordDomains),
+	{ID: telegramService, Label: "Telegram", Domains: []string{}},
 }
 
 func findService(id string) (servicePreset, bool) {

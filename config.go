@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"encoding/json"
 )
@@ -36,9 +37,11 @@ type settings struct {
 }
 
 type state struct {
-	Settings     settings
-	Subscription string
-	Nodes        []node
+	Settings          settings
+	Subscription      string
+	Nodes             []node
+	TelegramCIDRs     []string
+	TelegramUpdatedAt time.Time
 }
 
 func defaultState() state {
@@ -98,6 +101,7 @@ func coreConfig(s state, tun bool, secret string) ([]byte, error) {
 	providers := make(map[string]any)
 	for _, r := range s.Settings.Rules {
 		match := r.Match + "," + r.Value
+		noResolve := r.Match == "IP-CIDR"
 		if r.Match == "SERVICE" {
 			preset, ok := findService(r.Value)
 			if !ok {
@@ -106,16 +110,20 @@ func coreConfig(s state, tun bool, secret string) ([]byte, error) {
 			provider := "service-" + preset.ID
 			providers[provider] = map[string]any{"type": "inline", "behavior": "classical", "payload": preset.rules}
 			match = "RULE-SET," + provider
+			if preset.ID == telegramService {
+				providers[provider] = map[string]any{"type": "inline", "behavior": "ipcidr", "payload": telegramCIDRs(s)}
+				noResolve = true
+			}
 		}
 		if r.Action == "VPN" {
-			if r.Match == "IP-CIDR" {
+			if noResolve {
 				match += ",no-resolve"
 			}
 			rules = append(rules, "SUB-RULE,("+match+"),"+vpnNetworkRules)
 			continue
 		}
 		line := match + "," + direct
-		if r.Match == "IP-CIDR" {
+		if noResolve {
 			line += ",no-resolve"
 		}
 		rules = append(rules, line)

@@ -20,37 +20,40 @@ type nodeStatus struct {
 }
 
 type status struct {
-	Settings     settings     `json:"settings"`
-	Subscribed   bool         `json:"subscribed"`
-	Nodes        []nodeStatus `json:"nodes"`
-	Selected     string       `json:"selected"`
-	SelectedUDP  string       `json:"selectedUdp"`
-	CheckedAt    time.Time    `json:"checkedAt"`
-	UpdatedAt    time.Time    `json:"updatedAt"`
-	RefreshError string       `json:"refreshError"`
-	CoreError    bool         `json:"coreError"`
-	Tun          bool         `json:"tun"`
-	Traffic      *traffic     `json:"traffic,omitempty"`
+	Settings     settings       `json:"settings"`
+	Subscribed   bool           `json:"subscribed"`
+	Nodes        []nodeStatus   `json:"nodes"`
+	Selected     string         `json:"selected"`
+	SelectedUDP  string         `json:"selectedUdp"`
+	CheckedAt    time.Time      `json:"checkedAt"`
+	UpdatedAt    time.Time      `json:"updatedAt"`
+	RefreshError string         `json:"refreshError"`
+	CoreError    bool           `json:"coreError"`
+	Tun          bool           `json:"tun"`
+	Traffic      *traffic       `json:"traffic,omitempty"`
+	Telegram     telegramStatus `json:"telegram"`
 }
 
 type manager struct {
-	importMu     sync.Mutex
-	mu           sync.Mutex
-	current      state
-	revision     uint64
-	selected     string
-	selectedUDP  string
-	checks       []nodeCheck
-	checkedAt    time.Time
-	updatedAt    time.Time
-	refreshError string
-	coreError    bool
-	path         string
-	core         coreClient
-	tun          bool
-	subClient    *http.Client
-	probeNow     chan struct{}
-	refreshNow   chan struct{}
+	importMu      sync.Mutex
+	telegramMu    sync.Mutex
+	mu            sync.Mutex
+	current       state
+	revision      uint64
+	selected      string
+	selectedUDP   string
+	checks        []nodeCheck
+	checkedAt     time.Time
+	updatedAt     time.Time
+	refreshError  string
+	telegramError string
+	coreError     bool
+	path          string
+	core          coreClient
+	tun           bool
+	subClient     *http.Client
+	probeNow      chan struct{}
+	refreshNow    chan struct{}
 }
 
 func (m *manager) snapshot() status {
@@ -66,7 +69,8 @@ func (m *manager) snapshot() status {
 	}
 	return status{Settings: m.current.Settings, Subscribed: m.current.Subscription != "", Nodes: nodes,
 		Selected: m.selected, SelectedUDP: m.selectedUDP, CheckedAt: m.checkedAt, UpdatedAt: m.updatedAt,
-		RefreshError: m.refreshError, CoreError: m.coreError, Tun: m.tun}
+		RefreshError: m.refreshError, CoreError: m.coreError, Tun: m.tun,
+		Telegram: telegramStatus{CIDRs: telegramCIDRs(m.current), UpdatedAt: m.current.TelegramUpdatedAt, Error: m.telegramError}}
 }
 
 // apply is called with mu held so persistence, runtime configuration and status advance together.

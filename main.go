@@ -72,6 +72,7 @@ func run() error {
 		probeNow: make(chan struct{}, 1), refreshNow: make(chan struct{}, 1)}
 	go m.probeLoop(ctx)
 	go m.refreshLoop(ctx)
+	go m.telegramLoop(ctx)
 	server := &http.Server{Addr: env("MIKROTIK_LISTEN", "127.0.0.1:8080"), Handler: webHandler(m, password),
 		ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 65 * time.Second, IdleTimeout: 60 * time.Second}
 	webDone := make(chan error, 1)
@@ -99,6 +100,12 @@ func webHandler(m *manager, password string) http.Handler {
 		writeJSON(w, 200, status)
 	})
 	mux.HandleFunc("GET /api/services", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, servicePresets) })
+	mux.HandleFunc("POST /api/services/telegram/refresh", func(w http.ResponseWriter, r *http.Request) {
+		if !readJSON(w, r, &struct{}{}) {
+			return
+		}
+		result(w, m.refreshTelegram(r.Context()))
+	})
 	mux.HandleFunc("PUT /api/subscription", func(w http.ResponseWriter, r *http.Request) {
 		var body struct{ URL *string }
 		if !readJSON(w, r, &body) {

@@ -112,6 +112,9 @@ func TestCoreConfigPreservesRuleOrder(t *testing.T) {
 
 func TestServiceCatalogRules(t *testing.T) {
 	for _, preset := range servicePresets {
+		if preset.ID == telegramService {
+			continue // Its IPv4 rule provider is covered in telegram_test.go.
+		}
 		if len(preset.rules) == 0 {
 			t.Fatalf("empty preset: %s", preset.ID)
 		}
