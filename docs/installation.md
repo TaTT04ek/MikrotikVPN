@@ -38,11 +38,11 @@ Enter принимает предложенное значение. Для се�
 
 ## Установить с HTTPS-ссылки
 
-Роутеру нужны DNS, доступ к GitHub и доверенная цепочка TLS. Вставьте весь блок в интерактивный терминал WinBox или SSH.
+Установщик и образы релиза `v0.1.0` доступны по прямым HTTPS-ссылкам на GitHub Pages. Роутеру нужны DNS, доступ к `tatt04ek.github.io` и доверенная цепочка TLS. Вставьте весь блок в интерактивный терминал WinBox или SSH.
 
 ```routeros
 {
-    :local releaseUrl "https://github.com/TaTT04ek/MikrotikVPN/releases/download/v0.1.0"
+    :local releaseUrl "https://tatt04ek.github.io/MikrotikVPN/v0.1.0"
     :local installerFile ("mikrotik-vpn-" . [:rndstr length=8] . ".rsc")
     :global mikrotikVpnReleaseBase
     :onerror err in={
