@@ -1,6 +1,25 @@
 # MikroTik VPN
 
-MikroTik VPN — контейнер для RouterOS 7 с веб-панелью и сетевым ядром Mihomo. Из панели можно загрузить VPN-подписку и выбрать, какой IPv4-трафик отправлять через VPN, а какой пускать напрямую. VPN-подписку предоставляет ваш провайдер.
+[English](#english) · [Установка](#установка) · [Релизы](https://github.com/TaTT04ek/MikrotikVPN/releases) · [Авторы и источники](#авторы-и-источники)
+
+MikroTik VPN — контейнер для RouterOS 7 с веб-панелью и сетевым ядром Mihomo. Подключите подписку своего VPN-провайдера, выберите трафик для туннеля и следите за активными TCP- и UDP-выходами, задержкой и трафиком контейнера. Панель адаптируется к экрану телефона и поддерживает светлую, тёмную и системную темы.
+
+![Веб-панель MikroTik VPN с демонстрационными данными](docs/images/dashboard.png)
+
+## Содержание
+
+- [Выбор образа](#выбор-образа)
+- [Включение контейнеров в RouterOS](#включение-контейнеров-в-routeros)
+- [Установка по HTTPS](#по-https) и [из архива](#из-локального-архива)
+- [Первый запуск и настройка](#первый-запуск-и-настройка)
+- [Применение правил](#как-применяются-правила)
+- [Диагностика](#диагностика)
+
+## English
+
+MikroTik VPN is a RouterOS 7 container powered by Mihomo. Import a VPN subscription, route selected IPv4 traffic through the VPN, and let the gateway select healthy TCP and UDP exits independently. The responsive dashboard shows active routes, latency, and live container traffic. It includes light, dark, and system themes.
+
+[HTTPS install command](#по-https) · [RouterOS setup](#включение-контейнеров-в-routeros) · [Release downloads](https://github.com/TaTT04ek/MikrotikVPN/releases) · [Credits](#авторы-и-источники)
 
 ## Выбор образа
 
@@ -66,6 +85,8 @@ MikroTik VPN — контейнер для RouterOS 7 с веб-панелью �
 3. Нажмите **Проверить узлы**. У выбранных выходов TCP и UDP могут быть разные серверы. Панель показывает задержку, а для узлов с поддержкой UDP — пометку UDP.
 4. Добавьте первое правило. Например, **Маршрутизация → Добавить сервис → YouTube → Через VPN**. Оставьте **Без совпадений → Напрямую**, затем нажмите **Сохранить настройки**. Проверьте нужный сервис и прямой маршрут с того же клиентского устройства.
 
+На экране **Обзор** видны активные выходы и графики. Трафик измеряется на сетевом интерфейсе контейнера. Задержка берётся из HTTP-проверок выбранных узлов. Графики копят замеры, пока открыта панель. Выбор темы сохраняется в браузере.
+
 ### Как применяются правила
 
 - В RouterOS список `mikrot-vpn-clients` определяет, чьи IPv4-соединения поступают в контейнер. Панель определяет, куда отправить этот трафик.
@@ -105,3 +126,9 @@ MikroTik VPN — контейнер для RouterOS 7 с веб-панелью �
 
 - [Подробная инструкция по установке](docs/installation.md)
 - [Архитектура](docs/architecture.md)
+
+## Авторы и источники
+
+- **nskforward** — автор гайда по VLESS и Mihomo на MikroTik, который послужил отправной точкой для настройки контейнерного шлюза в RouterOS. [Оригинальный гайд](https://gist.github.com/nskforward/d143f4adde26ddf92001b0a84bc4de19)
+- **MetaCubeX** — разработчики сетевого ядра Mihomo, которое запускается внутри контейнера. [Mihomo v1.19.32](https://github.com/MetaCubeX/mihomo/releases/tag/v1.19.32)
+- **V2Fly и участники domain-list-community** — источник доменных списков для встроенных пресетов. [Исходные списки](https://github.com/v2fly/domain-list-community) · [Лицензия списков](services/LICENSE)
