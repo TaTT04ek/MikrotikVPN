@@ -1,6 +1,6 @@
 # MikroTik VPN
 
-[English](#english) · [Установка](#установка) · [Релизы](https://github.com/TaTT04ek/MikrotikVPN/releases) · [Авторы и источники](#авторы-и-источники)
+[English](README.en.md) · [Установка](#установка) · [Релизы](https://github.com/TaTT04ek/MikrotikVPN/releases) · [Авторы и источники](#авторы-и-источники)
 
 MikroTik VPN — контейнер для RouterOS 7 с веб-панелью и сетевым ядром Mihomo. Подключите подписку своего VPN-провайдера, выберите трафик для туннеля и следите за активными TCP- и UDP-выходами, задержкой и трафиком контейнера. Панель адаптируется к экрану телефона и поддерживает светлую, тёмную и системную темы.
 
@@ -16,12 +16,6 @@ MikroTik VPN — контейнер для RouterOS 7 с веб-панелью �
 - [Диапазоны Telegram](#диапазоны-telegram)
 - [Диагностика](#диагностика)
 - [Если подписка не добавляется](#если-подписка-не-добавляется)
-
-## English
-
-MikroTik VPN is a RouterOS 7 container powered by Mihomo. Import a VPN subscription, route selected IPv4 traffic through the VPN, and let the gateway select healthy TCP and UDP exits independently. The responsive dashboard shows active routes, latency, and live container traffic. It includes light, dark, and system themes.
-
-[HTTPS install command](#по-https) · [RouterOS setup](#включение-контейнеров-в-routeros) · [Release downloads](https://github.com/TaTT04ek/MikrotikVPN/releases) · [Credits](#авторы-и-источники)
 
 ## Выбор образа
 
