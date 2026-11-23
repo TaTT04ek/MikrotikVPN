@@ -11,6 +11,7 @@ let initialized = false;
 let busy = false;
 let requestNumber = 0;
 let catalog;
+let renderedSources = "";
 
 async function api(path, method = "GET", data) {
   const options = data === undefined ? { method } : {
@@ -92,6 +93,50 @@ function loadSettings(settings) {
   el("save").disabled = false;
 }
 
+function renderSources(sources) {
+  const signature = JSON.stringify(sources);
+  if (signature === renderedSources) return;
+  renderedSources = signature;
+  el("subscription-status").textContent = sources.length ? "" : "Источники пока не добавлены";
+  el("sources").replaceChildren(...sources.map((source, index) => {
+    const row = document.createElement("div");
+    row.className = "source-row";
+    const info = document.createElement("div");
+    const title = document.createElement("strong");
+    const caption = document.createElement("p");
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    caption.className = "chart-caption";
+    const kind = source.remote ? "Подписка" : "Ключ";
+    title.textContent = source.label || `${kind} ${index + 1}`;
+    const date = timestamp(source.updatedAt);
+    caption.textContent = source.remote
+      ? [`${kind} · ${source.nodeCount} в списке`, source.error || (date && `Обновлено ${date}`)].filter(Boolean).join(" · ")
+      : kind;
+    info.append(title, caption);
+    row.append(info, actions);
+    const path = `/api/sources/${encodeURIComponent(source.id)}`;
+    const addButton = (label, handler) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "secondary";
+      button.textContent = label;
+      button.setAttribute("aria-label", `${label} · ${title.textContent}`);
+      button.addEventListener("click", () => handler(button));
+      actions.append(button);
+    };
+    if (source.remote) {
+      addButton("Обновить", (button) => mutate(button, path + "/refresh", "POST", {}, "Подписка обновлена."));
+    }
+    addButton("Удалить", (button) => {
+      if (confirm(`Удалить источник «${title.textContent}»?`)) {
+        mutate(button, path, "DELETE", {}, "Источник удалён.");
+      }
+    });
+    return row;
+  }));
+}
+
 async function loadStatus() {
   const request = ++requestNumber;
   const data = await api("/api/status");
@@ -113,11 +158,7 @@ async function loadStatus() {
     el("telegram-status").textContent = error ? `${summary}. ${error}.` : summary;
     el("telegram-cidrs").textContent = cidrs.join(" · ");
   }
-  const updated = timestamp(data.updatedAt);
-  el("subscription-status").textContent = data.refreshError || (data.subscribed
-    ? updated ? `Обновлено ${updated}` : "Подписка сохранена" : "Подписка не добавлена");
-  el("refresh").disabled = !data.subscribed;
-  el("remove").disabled = !data.subscribed;
+  renderSources(data.sources);
   el("count").textContent = data.nodes.length;
   const list = data.nodes.map((node) => {
     const item = document.createElement("div");
@@ -133,7 +174,7 @@ async function loadStatus() {
   });
   if (!list.length) {
     const empty = document.createElement("p");
-    empty.textContent = "Добавьте подписку, чтобы увидеть доступные серверы.";
+    empty.textContent = "Добавьте подписку или ключ, чтобы увидеть доступные серверы.";
     list.push(empty);
   }
   el("servers").replaceChildren(...list);
@@ -156,7 +197,6 @@ async function mutate(button, path, method, data, message, after) {
     notice(message);
   } catch (err) {
     notice(err.message, true);
-    if (path.startsWith("/api/subscription")) el("subscription-help").hidden = false;
   } finally {
     busy = false;
     button.disabled = false;
@@ -165,24 +205,16 @@ async function mutate(button, path, method, data, message, after) {
 }
 
 function showFeed(visible) {
-  el("feed-url").type = visible ? "url" : "password";
+  el("feed-url").type = visible ? "text" : "password";
   el("show-feed").textContent = visible ? "Скрыть" : "Показать";
 }
 el("show-feed").addEventListener("click", () => showFeed(el("feed-url").type === "password"));
 el("subscription").addEventListener("submit", (event) => {
   event.preventDefault();
-  el("subscription-help").hidden = true;
-  mutate(event.submitter, "/api/subscription", "PUT", { url: el("feed-url").value }, "Подписка загружена.", () => {
+  mutate(event.submitter, "/api/sources", "POST", { input: el("feed-url").value }, "Источник добавлен.", () => {
     el("feed-url").value = "";
     showFeed(false);
   });
-});
-el("feed-url").addEventListener("input", () => { el("subscription-help").hidden = true; });
-el("refresh").addEventListener("click", (event) => mutate(event.currentTarget, "/api/subscription/refresh", "POST", {}, "Подписка обновлена."));
-el("remove").addEventListener("click", (event) => {
-  if (confirm("Удалить подписку и её серверы?")) {
-    mutate(event.currentTarget, "/api/subscription", "PUT", { url: "" }, "Подписка удалена.");
-  }
 });
 el("probe").addEventListener("click", (event) => mutate(event.currentTarget, "/api/probe", "POST", {}, "Проверка запущена."));
 el("refresh-telegram").addEventListener("click", (event) => mutate(event.currentTarget, "/api/services/telegram/refresh", "POST", {}, "Список CIDR Telegram обновлён."));

@@ -109,6 +109,11 @@ button.secondary { background: var(--soft); color: var(--ink); border-color: var
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .actions, .order { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .actions { margin-top: 12px; }
+.source-list:not(:empty) { margin-top: 14px; }
+.source-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
+.source-row > div:first-child { flex: 1 1 140px; min-width: 0; overflow-wrap: anywhere; }
+.source-row .actions { margin-top: 0; }
+.source-row .chart-caption { margin: 0; }
 .inline { display: flex; align-items: center; gap: 8px; }
 .inline select { width: auto; }
 .rule { display: grid; grid-template-columns: minmax(118px, 1.2fr) minmax(125px, 2fr) minmax(102px, 1fr) auto; gap: 8px; align-items: end; padding: 10px; margin: 8px 0; border: 1px solid var(--line); border-radius: 9px; }

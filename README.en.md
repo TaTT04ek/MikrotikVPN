@@ -83,7 +83,7 @@ You can also enter a client IPv4 address or subnet, including wired devices. For
 The dashboard displays its controls in Russian. The steps below use English translations of their labels.
 
 1. From a trusted LAN, open the address shown by the installer. The default address is `http://172.30.55.2:8080`. Sign in as `admin` with the password set during installation.
-2. Under **Subscription**, paste the URL and click **Load**. Remnawave supports standard subscription links. The dashboard accepts plain-text or Base64-encoded lists of links and Clash/Mihomo YAML with a `proxies` section. Click **Show** to check the URL. The field masks the URL by default because it can contain an access token. Supported protocols include VLESS/REALITY, VMess, Trojan, Shadowsocks, Hysteria2, and TUIC. A subscription can contain up to 64 unique supported nodes.
+2. Under **Node sources**, paste a subscription URL or a single connection key and click **Add**. Repeat for each source. Supported protocols include VLESS/REALITY, VMess, Trojan, Shadowsocks, Hysteria2, and TUIC. All sources together can contain up to 64 unique nodes. You can refresh each subscription separately or remove any source.
 3. Click **Check nodes**. The gateway can select different servers for TCP and UDP. The dashboard shows latency and marks nodes that support UDP.
 4. Add your first rule under **Routing → Add service → YouTube → Via VPN**. Keep **No match → Direct**, then click **Save settings**. From the same client device, test the service and check that direct connections still work.
 
@@ -134,7 +134,7 @@ When reporting an issue, include the device model, RouterOS version, architectur
 
 ### Subscription import problems
 
-1. Use **Show** to verify the URL. Paste the client subscription URL provided by your VPN provider. Remnawave standard subscription links work. If the dashboard receives HTML instead of a node list, make sure you copied the subscription link from the user's details. [Remnawave subscription formats](https://docs.rw/learn-en/templates/)
+1. Use **Show** to verify the URL. An HTTP or HTTPS subscription URL must return a plain-text or Base64-encoded list of keys, or a Clash/Mihomo YAML configuration with a `proxies` section. If the server returns HTML, ask your provider for a direct import URL. If you have a single key with a prefix such as `vless://` or `ss://`, paste the complete key into the same field.
 2. If the dashboard reports a DNS error, test only the hostname on the router. Replace `sub.example.com` with the hostname from your subscription link, excluding the path and token.
 
    ```routeros

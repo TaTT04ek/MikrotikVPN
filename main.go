@@ -116,13 +116,36 @@ func webHandler(m *manager, password string) http.Handler {
 			return
 		}
 		raw := strings.TrimSpace(*body.URL)
-		result(w, m.importFeed(r.Context(), &raw))
+		if raw == "" {
+			result(w, m.deleteSource(r.Context(), legacySourceID))
+			return
+		}
+		result(w, m.addSource(r.Context(), legacySourceID, raw))
 	})
 	mux.HandleFunc("POST /api/subscription/refresh", func(w http.ResponseWriter, r *http.Request) {
 		if !readJSON(w, r, &struct{}{}) {
 			return
 		}
-		result(w, m.importFeed(r.Context(), nil))
+		result(w, m.refreshSource(r.Context(), legacySourceID))
+	})
+	mux.HandleFunc("POST /api/sources", func(w http.ResponseWriter, r *http.Request) {
+		var body struct{ Input string }
+		if !readJSON(w, r, &body) {
+			return
+		}
+		result(w, m.addSource(r.Context(), "", body.Input))
+	})
+	mux.HandleFunc("POST /api/sources/{id}/refresh", func(w http.ResponseWriter, r *http.Request) {
+		if !readJSON(w, r, &struct{}{}) {
+			return
+		}
+		result(w, m.refreshSource(r.Context(), r.PathValue("id")))
+	})
+	mux.HandleFunc("DELETE /api/sources/{id}", func(w http.ResponseWriter, r *http.Request) {
+		if !readJSON(w, r, &struct{}{}) {
+			return
+		}
+		result(w, m.deleteSource(r.Context(), r.PathValue("id")))
 	})
 	mux.HandleFunc("PUT /api/settings", func(w http.ResponseWriter, r *http.Request) {
 		var body settings

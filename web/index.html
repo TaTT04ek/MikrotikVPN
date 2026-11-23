@@ -15,7 +15,7 @@
     <nav aria-label="Разделы панели">
       <a href="#overview" aria-current="location">Обзор</a>
       <a href="#statistics">Статистика</a>
-      <a href="#subscription-title">Подписка</a>
+      <a href="#subscription-title">Источники</a>
       <a href="#servers-title">Серверы</a>
       <a href="#rules-title">Правила</a>
       <a href="#balance-title">Автовыбор</a>
@@ -60,17 +60,17 @@
     </section>
     <div class="grid">
       <section class="panel" aria-labelledby="subscription-title">
-        <h2 id="subscription-title">Подписка</h2>
+        <h2 id="subscription-title">Источники узлов</h2>
         <p id="subscription-status"></p>
         <form id="subscription" autocomplete="off">
-          <label for="feed-url">URL подписки</label>
+          <label for="feed-url">Ссылка подписки или ключ подключения</label>
           <div class="feed-input">
             <input id="feed-url" type="password" inputmode="url" required placeholder="https://…" maxlength="8192" autocomplete="off" autocapitalize="none" spellcheck="false">
             <button id="show-feed" class="secondary" type="button" aria-controls="feed-url">Показать</button>
           </div>
-          <p class="chart-caption" id="subscription-help" hidden>Проверьте ссылку и доступ к серверу подписки из сети роутера.</p>
-          <div class="actions"><button type="submit">Загрузить</button><button id="refresh" class="secondary" type="button">Обновить</button><button id="remove" class="secondary" type="button">Удалить</button></div>
+          <div class="actions"><button type="submit">Добавить</button></div>
         </form>
+        <div id="sources" class="source-list"></div>
       </section>
       <section class="panel" aria-labelledby="servers-title">
         <div class="panel-title"><h2 id="servers-title">Серверы</h2><span class="count" id="count">—</span></div>

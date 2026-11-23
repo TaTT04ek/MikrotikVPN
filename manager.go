@@ -23,6 +23,7 @@ type status struct {
 	Settings     settings       `json:"settings"`
 	Subscribed   bool           `json:"subscribed"`
 	Nodes        []nodeStatus   `json:"nodes"`
+	Sources      []sourceStatus `json:"sources"`
 	Selected     string         `json:"selected"`
 	SelectedUDP  string         `json:"selectedUdp"`
 	CheckedAt    time.Time      `json:"checkedAt"`
@@ -44,8 +45,7 @@ type manager struct {
 	selectedUDP   string
 	checks        []nodeCheck
 	checkedAt     time.Time
-	updatedAt     time.Time
-	refreshError  string
+	sourceErrors  map[string]string
 	telegramError string
 	coreError     bool
 	path          string
@@ -68,9 +68,10 @@ func (m *manager) snapshot() status {
 		}
 		nodes = append(nodes, entry)
 	}
-	return status{Settings: m.current.Settings, Subscribed: m.current.Subscription != "", Nodes: nodes,
-		Selected: m.selected, SelectedUDP: m.selectedUDP, CheckedAt: m.checkedAt, UpdatedAt: m.updatedAt,
-		RefreshError: m.refreshError, CoreError: m.coreError, Tun: m.tun,
+	sources, updatedAt, refreshError, subscribed := m.sourceStatuses()
+	return status{Settings: m.current.Settings, Subscribed: subscribed, Nodes: nodes, Sources: sources,
+		Selected: m.selected, SelectedUDP: m.selectedUDP, CheckedAt: m.checkedAt, UpdatedAt: updatedAt,
+		RefreshError: refreshError, CoreError: m.coreError, Tun: m.tun,
 		Telegram: telegramStatus{CIDRs: telegramCIDRs(m.current), UpdatedAt: m.current.TelegramUpdatedAt, Error: m.telegramError}}
 }
 
@@ -141,79 +142,6 @@ func (m *manager) saveSettings(ctx context.Context, s settings) error {
 		notify(m.refreshNow)
 	}
 	return err
-}
-
-func (m *manager) importFeed(ctx context.Context, replacement *string) error {
-	m.importMu.Lock()
-	defer m.importMu.Unlock()
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	m.mu.Lock()
-	original := m.current.Subscription
-	m.mu.Unlock()
-	raw := original
-	if replacement != nil {
-		raw = *replacement
-	}
-	if replacement == nil && raw == "" {
-		return errors.New("добавьте URL подписки")
-	}
-	var nodes []node
-	var err error
-	if raw != "" {
-		nodes, err = fetchSubscription(ctx, m.subClient, raw)
-	}
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if err == nil {
-		next := m.current
-		next.Subscription, next.Nodes = raw, nodes
-		before, _ := json.Marshal(m.current.Nodes)
-		after, _ := json.Marshal(nodes)
-		if raw != original || string(before) != string(after) {
-			err = m.apply(ctx, next)
-		}
-	}
-	if err != nil {
-		if replacement == nil {
-			m.refreshError = err.Error()
-		}
-		return err
-	}
-	m.refreshError = ""
-	m.updatedAt = time.Time{}
-	if raw != "" {
-		m.updatedAt = time.Now()
-	}
-	if replacement != nil {
-		notify(m.refreshNow)
-	}
-	return nil
-}
-
-func (m *manager) refreshLoop(ctx context.Context) {
-	for ctx.Err() == nil {
-		m.mu.Lock()
-		hours := m.current.Settings.RefreshHours
-		hasFeed := m.current.Subscription != ""
-		m.mu.Unlock()
-		var tick <-chan time.Time
-		var timer *time.Timer
-		if hours > 0 && hasFeed {
-			timer = time.NewTimer(time.Duration(hours) * time.Hour)
-			tick = timer.C
-		}
-		select {
-		case <-ctx.Done():
-		case <-m.refreshNow:
-		case <-tick:
-			_ = m.importFeed(ctx, nil)
-		}
-		if timer != nil {
-			timer.Stop()
-		}
-	}
 }
 
 func bestNode(nodes []node, checks []nodeCheck, selected string, tolerance int, requireUDP bool) string {
@@ -311,6 +239,16 @@ func loadState(dir string) (state, string, error) {
 	}
 	if err = json.Unmarshal(data, &s); err != nil {
 		return s, path, err
+	}
+	if s.Subscription != "" && len(s.Sources) == 0 {
+		s.Sources = []nodeSource{{ID: legacySourceID, URL: s.Subscription, Nodes: s.Nodes}}
+	}
+	s.Subscription = ""
+	if len(s.Sources) > 0 {
+		s.Nodes, err = mergeSourceNodes(s.Sources)
+		if err != nil {
+			return s, path, err
+		}
 	}
 	return s, path, normalizeSettings(&s.Settings)
 }

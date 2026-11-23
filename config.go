@@ -38,7 +38,8 @@ type settings struct {
 
 type state struct {
 	Settings          settings
-	Subscription      string
+	Subscription      string       `json:",omitempty"`
+	Sources           []nodeSource `json:",omitempty"`
 	Nodes             []node
 	TelegramCIDRs     []string
 	TelegramUpdatedAt time.Time
