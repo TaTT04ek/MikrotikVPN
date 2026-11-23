@@ -1,0 +1,49 @@
+name: Publish RouterOS downloads
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/routeros-downloads.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: routeros-downloads
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      VERSION: v0.1.0
+    steps:
+      - name: Download and verify release files
+        run: |
+          set -euo pipefail
+          mkdir -p "site/$VERSION"
+          cd "site/$VERSION"
+          release="https://github.com/$GITHUB_REPOSITORY/releases/download/$VERSION"
+          for file in mikrotik-vpn-install.rsc SHA256SUMS mikrot-{armv5,armv6,armv7,arm64,amd64}.tar; do
+            curl --fail --silent --show-error --location --retry 3 "$release/$file" --output "$file"
+          done
+          sha256sum --check --strict SHA256SUMS
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - id: pages
+        uses: actions/deploy-pages@v4
