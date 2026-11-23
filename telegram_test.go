@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -20,8 +21,14 @@ func TestTelegramRefreshReplacesAndKeepsLastGoodList(t *testing.T) {
 	current := defaultState()
 	current.TelegramCIDRs = []string{"91.108.4.0/22"}
 	body := "149.154.160.0/20\n91.105.192.0/23\n2001:b28:f23d::/48\n91.105.192.0/23\n"
+	var proxyRequests int
 	m := manager{current: current, path: filepath.Join(dir, "state.json"), subClient: &http.Client{
+		Transport: telegramTransport(func(*http.Request) (*http.Response, error) {
+			return nil, errors.New("direct connection timed out")
+		}),
+	}, telegramProxy: &http.Client{
 		Transport: telegramTransport(func(req *http.Request) (*http.Response, error) {
+			proxyRequests++
 			if req.URL.String() != telegramURL {
 				t.Fatalf("unexpected source %s", req.URL)
 			}
@@ -33,7 +40,7 @@ func TestTelegramRefreshReplacesAndKeepsLastGoodList(t *testing.T) {
 	}
 	want := []string{"149.154.160.0/20", "91.105.192.0/23"}
 	updated := m.snapshot().Telegram
-	if !slices.Equal(updated.CIDRs, want) || updated.UpdatedAt.IsZero() {
+	if proxyRequests != 1 || !slices.Equal(updated.CIDRs, want) || updated.UpdatedAt.IsZero() {
 		t.Fatalf("unexpected refreshed list: %+v", updated)
 	}
 	body = "2001:b28:f23d::/48"

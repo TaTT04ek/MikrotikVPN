@@ -143,6 +143,10 @@ func coreConfig(s state, tun bool, secret string) ([]byte, error) {
 		"external-controller": "127.0.0.1:9090", "secret": secret, "log-level": "silent", "mode": "rule",
 		"profile":    map[string]any{"store-selected": false},
 		"mixed-port": map[bool]int{false: 7890, true: 0}[tun], "allow-lan": false,
+		"listeners": []map[string]any{{
+			"name": "telegram-cidr", "type": "http", "listen": telegramProxyHost,
+			"port": telegramProxyPort, "proxy": groupName,
+		}},
 		"ipv6": false, "proxies": proxies, "rules": rules,
 		"rule-providers": providers,
 		"sub-rules":      map[string][]string{vpnNetworkRules: {"NETWORK,UDP," + udpGroupName, "MATCH," + groupName}},

@@ -52,6 +52,7 @@ type manager struct {
 	core          coreClient
 	tun           bool
 	subClient     *http.Client
+	telegramProxy *http.Client
 	probeNow      chan struct{}
 	refreshNow    chan struct{}
 }

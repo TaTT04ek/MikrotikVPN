@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/netip"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -18,6 +19,20 @@ const telegramService = "telegram"
 const telegramURL = "https://core.telegram.org/resources/cidr.txt"
 const telegramInterval = 3 * time.Hour
 const maxTelegramList = 64 << 10
+const telegramProxyHost = "127.0.0.1"
+const telegramProxyPort = 7891
+
+var errTelegramDownload = errors.New("не удалось скачать список CIDR Telegram")
+
+func telegramProxyClient() *http.Client {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	proxy := &url.URL{Scheme: "http", Host: fmt.Sprintf("%s:%d", telegramProxyHost, telegramProxyPort)}
+	transport.Proxy = http.ProxyURL(proxy)
+	transport.ResponseHeaderTimeout = 10 * time.Second
+	return &http.Client{Transport: transport, CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
+}
 
 //go:embed services/telegram.txt
 var telegramBootstrap string
@@ -67,7 +82,7 @@ func fetchTelegramCIDRs(ctx context.Context, client *http.Client) ([]string, err
 	}
 	res, err := client.Do(req)
 	if err != nil {
-		return nil, errors.New("не удалось скачать список CIDR Telegram")
+		return nil, errTelegramDownload
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
@@ -86,6 +101,9 @@ func (m *manager) refreshTelegram(ctx context.Context) error {
 	}
 	defer m.telegramMu.Unlock()
 	list, err := fetchTelegramCIDRs(ctx, m.subClient)
+	if errors.Is(err, errTelegramDownload) && m.telegramProxy != nil && ctx.Err() == nil {
+		list, err = fetchTelegramCIDRs(ctx, m.telegramProxy)
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if err == nil {

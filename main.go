@@ -69,7 +69,7 @@ func run() error {
 		return err
 	}
 	m := &manager{current: s, selected: direct, selectedUDP: direct, path: path, core: api, tun: tun, subClient: subscriptionClient(),
-		probeNow: make(chan struct{}, 1), refreshNow: make(chan struct{}, 1)}
+		telegramProxy: telegramProxyClient(), probeNow: make(chan struct{}, 1), refreshNow: make(chan struct{}, 1)}
 	go m.probeLoop(ctx)
 	go m.refreshLoop(ctx)
 	go m.telegramLoop(ctx)
