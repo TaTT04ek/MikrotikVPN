@@ -1,6 +1,6 @@
 # Установка MikroTik VPN
 
-Сначала включите контейнеры в RouterOS. Затем выберите архив по [таблице совместимости](compatibility.md). Сборки для проверки доступны в артефактах GitHub Actions после успешного запуска проверки. Скачанный из Actions ZIP нужно распаковать на компьютере.
+Сначала включите контейнеры в RouterOS. Для установки с GitHub используйте команду ниже. Для установки с диска выберите архив по модели и скачайте его вместе с установщиком. [Таблица совместимости](compatibility.md) · [Файлы релиза v0.1.0](https://github.com/TaTT04ek/MikrotikVPN/releases/tag/v0.1.0)
 
 ## Включить контейнеры в RouterOS
 
@@ -38,11 +38,11 @@ Enter принимает предложенное значение. Для се�
 
 ## Установить с HTTPS-ссылки
 
-На HTTPS-сервере разложите рядом скрипт и архивы под их штатными именами. Для GitHub Releases используйте путь конкретного тега, когда релиз и его файлы станут общедоступны. Роутеру нужны DNS, доступ к серверу и доверенная цепочка TLS. Выполните весь блок в интерактивном терминале, подставив адрес каталога вместо примера:
+Роутеру нужны DNS, доступ к GitHub и доверенная цепочка TLS. Вставьте весь блок в интерактивный терминал WinBox или SSH.
 
 ```routeros
 {
-    :local releaseUrl "https://downloads.example.org/mikrotik-vpn/v0.1.0"
+    :local releaseUrl "https://github.com/TaTT04ek/MikrotikVPN/releases/download/v0.1.0"
     :local installerFile ("mikrotik-vpn-" . [:rndstr length=8] . ".rsc")
     :global mikrotikVpnReleaseBase
     :onerror err in={
@@ -58,4 +58,4 @@ Enter принимает предложенное значение. Для се�
 }
 ```
 
-При нажатии Enter в поле архива установщик скачает файл для обнаруженной архитектуры. Можно ввести другой путь или HTTPS-ссылку. Образ загружается на выбранный диск, и архив остаётся там после установки. [RouterOS Fetch](https://manual.mikrotik.com/docs/cli-reference/tool/fetch/) · [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)
+При нажатии Enter в поле архива установщик скачает файл для обнаруженной архитектуры. Можно ввести другой путь или HTTPS-ссылку. Образ загружается на выбранный диск, и архив остаётся там после установки. Для собственного HTTPS-сервера замените `releaseUrl` на адрес каталога с установщиком и архивами под теми же именами. [RouterOS Fetch](https://manual.mikrotik.com/docs/cli-reference/tool/fetch/)

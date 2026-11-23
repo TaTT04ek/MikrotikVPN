@@ -4,7 +4,7 @@ MikroTik VPN — контейнер для RouterOS 7 с веб-панелью �
 
 ## Выбор образа
 
-В терминале MikroTik выполните `/system/resource/print` и проверьте модель, версию и `architecture-name`. Скачайте подходящий архив из раздела **Artifacts** последнего успешного запуска в GitHub Actions. Артефакт `routeros-installation-files` содержит установщик `mikrotik-vpn-install.rsc`, образы и файл `SHA256SUMS`. Распакуйте внешний ZIP на компьютере, сохранив нужный образ в виде файла `.tar`. [Сборки GitHub Actions](https://github.com/TaTT04ek/MikrotikVPN/actions)
+В терминале MikroTik выполните `/system/resource/print` и проверьте модель, версию и `architecture-name`. Для локальной установки скачайте подходящий `.tar`, установщик `mikrotik-vpn-install.rsc` и файл контрольных сумм `SHA256SUMS` со страницы релиза. При установке по HTTPS роутер загрузит нужный образ сам. [Файлы релиза v0.1.0](https://github.com/TaTT04ek/MikrotikVPN/releases/tag/v0.1.0)
 
 | Устройство или архитектура | Архив |
 | --- | --- |
@@ -37,7 +37,7 @@ MikroTik VPN — контейнер для RouterOS 7 с веб-панелью �
 
 ### По HTTPS
 
-Роутер может скачать установщик и подходящий образ с одного HTTPS-сервера. Укажите адрес каталога, где лежат `mikrotik-vpn-install.rsc` и архив образа под именем из таблицы. [Команда для установки по HTTPS](docs/installation.md#установить-с-https-ссылки)
+Вставьте команду из инструкции в интерактивный терминал WinBox или SSH. В ней уже указан адрес GitHub Release `v0.1.0`. [Команда для установки с GitHub](docs/installation.md#установить-с-https-ссылки)
 
 ## Первый запуск и настройка
 
