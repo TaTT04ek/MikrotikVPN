@@ -1,3 +1,5 @@
+import { setupDashboard, updateDashboard } from "./dashboard.js";
+
 const el = (id) => document.getElementById(id);
 const settingsForm = el("settings");
 const rules = el("rules");
@@ -25,6 +27,7 @@ async function api(path, method = "GET", data) {
 function notice(message, error = false) {
   el("notice").textContent = message;
   el("notice").classList.toggle("error", error);
+  el("notice").hidden = !message;
 }
 
 function timestamp(value) {
@@ -96,10 +99,12 @@ async function loadStatus() {
   const selectedUdp = data.nodes.find((node) => node.id === data.selectedUdp);
   el("mode").textContent = data.tun ? "Шлюз RouterOS · IPv4" : "Локальный прокси · IPv4";
   el("active").textContent = data.coreError ? "Нет связи с ядром" : selected?.label ?? "Напрямую";
-  el("active-udp").textContent = data.coreError ? "" : `UDP: ${selectedUdp?.label ?? "напрямую"}`;
+  el("active-udp").textContent = data.coreError ? "—" : selectedUdp?.label ?? "Напрямую";
   const checked = timestamp(data.checkedAt);
   el("health").textContent = data.coreError ? "Состояние маршрута неизвестно" : checked
     ? `Проверено ${checked}${selected ? "" : " · доступных VPN-серверов нет"}` : "Ожидается проверка узлов";
+  el("health-dot").classList.toggle("online", Boolean(!data.coreError && selected));
+  updateDashboard(data, selected, selectedUdp);
   const updated = timestamp(data.updatedAt);
   el("subscription-status").textContent = data.refreshError || (data.subscribed
     ? updated ? `Обновлено ${updated}` : "Подписка сохранена" : "Подписка не добавлена");
@@ -111,11 +116,18 @@ async function loadStatus() {
     const name = document.createElement("span");
     const health = document.createElement("span");
     item.className = node.id === data.selected || node.id === data.selectedUdp ? "server active" : "server";
+    name.className = "server-name";
+    health.className = "server-info";
     name.textContent = node.label;
     health.textContent = `${node.kind.toUpperCase()}${node.udp ? " · UDP" : ""} · ${node.delay ? `${node.delay} мс` : checked ? "нет ответа" : "ожидание"}`;
     item.append(name, health);
     return item;
   });
+  if (!list.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "Добавьте подписку, чтобы увидеть доступные серверы.";
+    list.push(empty);
+  }
   el("servers").replaceChildren(...list);
   if (!initialized && !busy) {
     catalog ??= await api("/api/services");
@@ -136,6 +148,7 @@ async function mutate(button, path, method, data, message, after) {
     notice(message);
   } catch (err) {
     notice(err.message, true);
+    if (path.startsWith("/api/subscription")) el("subscription-help").hidden = false;
   } finally {
     busy = false;
     button.disabled = false;
@@ -145,10 +158,12 @@ async function mutate(button, path, method, data, message, after) {
 
 el("subscription").addEventListener("submit", (event) => {
   event.preventDefault();
+  el("subscription-help").hidden = true;
   mutate(event.submitter, "/api/subscription", "PUT", { url: el("feed-url").value }, "Подписка загружена.", () => {
     el("feed-url").value = "";
   });
 });
+el("feed-url").addEventListener("input", () => { el("subscription-help").hidden = true; });
 el("refresh").addEventListener("click", (event) => mutate(event.currentTarget, "/api/subscription/refresh", "POST", {}, "Подписка обновлена."));
 el("remove").addEventListener("click", (event) => {
   if (confirm("Удалить подписку и её серверы?")) {
@@ -175,5 +190,6 @@ settingsForm.addEventListener("submit", (event) => {
   });
   mutate(event.submitter, "/api/settings", "PUT", data, "Настройки сохранены.");
 });
+setupDashboard();
 loadStatus().catch((err) => notice(err.message, true));
 setInterval(() => { if (!busy && !document.hidden) loadStatus().catch(() => {}); }, 4000);

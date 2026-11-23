@@ -30,6 +30,7 @@ type status struct {
 	RefreshError string       `json:"refreshError"`
 	CoreError    bool         `json:"coreError"`
 	Tun          bool         `json:"tun"`
+	Traffic      *traffic     `json:"traffic,omitempty"`
 }
 
 type manager struct {

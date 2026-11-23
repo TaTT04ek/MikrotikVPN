@@ -25,6 +25,7 @@ jobs:
           go test ./...
           go vet ./...
           node --check web/app.js
+          node --check web/dashboard.js
       - name: Build and validate RouterOS archives
         run: |
           set -euo pipefail

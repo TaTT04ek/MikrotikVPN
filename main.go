@@ -93,7 +93,11 @@ func webHandler(m *manager, password string) http.Handler {
 	assets, _ := fs.Sub(webAssets, "web")
 	mux := http.NewServeMux()
 	mux.Handle("GET /", http.FileServer(http.FS(assets)))
-	mux.HandleFunc("GET /api/status", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, m.snapshot()) })
+	mux.HandleFunc("GET /api/status", func(w http.ResponseWriter, r *http.Request) {
+		status := m.snapshot()
+		status.Traffic = readTraffic()
+		writeJSON(w, 200, status)
+	})
 	mux.HandleFunc("GET /api/services", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, servicePresets) })
 	mux.HandleFunc("PUT /api/subscription", func(w http.ResponseWriter, r *http.Request) {
 		var body struct{ URL *string }

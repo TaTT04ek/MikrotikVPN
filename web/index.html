@@ -3,29 +3,73 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Mikrot VPN</title>
+  <title>MikroTik VPN</title>
+  <meta name="color-scheme" content="light dark">
   <link rel="stylesheet" href="/style.css">
   <script type="module" src="/app.js"></script>
 </head>
 <body>
-  <header class="top"><strong>Mikrot <span>VPN</span></strong><span id="mode"></span></header>
-  <main>
-    <section class="summary" aria-labelledby="active">
-      <div><p class="caption">Активный TCP-выход для VPN-правил</p><h1 id="active">Загрузка…</h1><p id="active-udp"></p><p id="health"></p></div>
+  <a class="skip" href="#overview">К содержимому</a>
+  <aside class="sidebar">
+    <a class="brand" href="#overview"><span class="brand-icon" aria-hidden="true">↗</span><span>MikroTik VPN</span></a>
+    <nav aria-label="Разделы панели">
+      <a href="#overview" aria-current="location">Обзор</a>
+      <a href="#statistics">Статистика</a>
+      <a href="#subscription-title">Подписка</a>
+      <a href="#servers-title">Серверы</a>
+      <a href="#rules-title">Правила</a>
+      <a href="#balance-title">Автовыбор</a>
+    </nav>
+  </aside>
+  <main id="overview">
+    <header class="top">
+      <div><p id="mode" class="caption"></p><h1>Обзор сети</h1></div>
+      <label class="theme">Тема<select id="theme"><option value="auto">Системная</option><option value="light">Светлая</option><option value="dark">Тёмная</option></select></label>
+    </header>
+    <p id="notice" role="status" aria-live="polite" hidden></p>
+    <section class="summary" aria-label="Активные маршруты">
+      <div>
+        <p class="caption">Текущий маршрут</p>
+        <div class="route-grid">
+          <div><span class="protocol">TCP</span><strong id="active">Загрузка…</strong></div>
+          <div><span class="protocol">UDP</span><strong id="active-udp">—</strong></div>
+        </div>
+        <p class="route-health"><span id="health-dot" aria-hidden="true"></span><span id="health">Получаем состояние ядра</span></p>
+      </div>
       <button id="probe" type="button">Проверить узлы</button>
     </section>
-    <p id="notice" role="status" aria-live="polite"></p>
+    <section class="stats" aria-label="Сводка сети">
+      <div class="metric"><p>Доступные узлы</p><strong id="available">—</strong></div>
+      <div class="metric"><p>Задержка TCP</p><strong id="delay">—</strong></div>
+      <div class="metric"><p>Входящий трафик</p><strong id="rx-rate">—</strong></div>
+      <div class="metric"><p>Исходящий трафик</p><strong id="tx-rate">—</strong></div>
+    </section>
+    <section class="grid charts" aria-labelledby="statistics">
+      <div class="panel">
+        <div class="panel-title"><h2 id="statistics">Трафик контейнера</h2><span id="traffic-iface" class="caption"></span></div>
+        <div class="legend"><span class="key rx">Приём</span><span class="key tx">Передача</span></div>
+        <canvas id="traffic-chart" role="img" aria-label="История скорости приёма и передачи" aria-describedby="traffic-caption"></canvas>
+        <p class="chart-caption" id="traffic-caption">Ожидаем счётчики интерфейса.</p>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><h2>Задержка узлов</h2></div>
+        <div class="legend"><span class="key rx">TCP</span><span class="key tx">UDP</span></div>
+        <canvas id="latency-chart" role="img" aria-label="История задержки выбранных узлов" aria-describedby="latency-caption"></canvas>
+        <p class="chart-caption" id="latency-caption">Ожидаем проверку узлов.</p>
+      </div>
+    </section>
     <div class="grid">
       <section class="panel" aria-labelledby="subscription-title">
         <h2 id="subscription-title">Подписка</h2>
         <p id="subscription-status"></p>
         <form id="subscription" autocomplete="off">
-          <label>URL подписки<input id="feed-url" type="password" required placeholder="https://…" maxlength="8192" autocomplete="new-password"></label>
+          <label>URL подписки<input id="feed-url" type="password" inputmode="url" required placeholder="https://…" maxlength="8192" autocomplete="new-password"></label>
+          <p class="chart-caption" id="subscription-help" hidden>Проверьте ссылку и доступ к серверу подписки из сети роутера.</p>
           <div class="actions"><button type="submit">Загрузить</button><button id="refresh" class="secondary" type="button">Обновить</button><button id="remove" class="secondary" type="button">Удалить</button></div>
         </form>
       </section>
       <section class="panel" aria-labelledby="servers-title">
-        <h2 id="servers-title">Серверы <span class="caption" id="count"></span></h2>
+        <div class="panel-title"><h2 id="servers-title">Серверы</h2><span class="count" id="count">—</span></div>
         <div id="servers" class="servers"></div>
       </section>
     </div>
