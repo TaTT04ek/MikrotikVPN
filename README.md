@@ -23,6 +23,30 @@ MikroTik VPN — контейнер для RouterOS 7 с веб-панелью �
 
 ## Установка
 
+### По HTTPS
+
+Скопируйте весь блок вместе с фигурными скобками и вставьте в терминал WinBox или SSH. Установщик скачает файлы релиза `v0.1.0` с GitHub Pages.
+
+```routeros
+{
+    :local releaseUrl "https://tatt04ek.github.io/MikrotikVPN/v0.1.0"
+    :local installerFile ("mikrotik-vpn-" . [:rndstr length=8] . ".rsc")
+    :global mikrotikVpnReleaseBase
+    :onerror err in={
+        /tool/fetch url=($releaseUrl . "/mikrotik-vpn-install.rsc") dst-path=$installerFile check-certificate=yes http-max-redirect-count=5
+        :set mikrotikVpnReleaseBase $releaseUrl
+        /import file-name=$installerFile
+    } do={
+        :set mikrotikVpnReleaseBase
+        :do { /file/remove [/file/find where name=$installerFile] } on-error={}
+        :error $err
+    }
+    /file/remove [/file/find where name=$installerFile]
+}
+```
+
+В поле архива нажмите **Enter**, чтобы роутер сам выбрал и скачал образ. Для hAP ac³ это `mikrot-armv7.tar`. [Прямая ссылка на установщик](https://tatt04ek.github.io/MikrotikVPN/v0.1.0/mikrotik-vpn-install.rsc)
+
 ### Из локального архива
 
 Загрузите `mikrotik-vpn-install.rsc` в корень **Files**, образ `.tar` — на смонтированный накопитель. Выполните команду в интерактивном терминале WinBox или SSH.
@@ -34,10 +58,6 @@ MikroTik VPN — контейнер для RouterOS 7 с веб-панелью �
 Установщик найдёт подходящий диск, предложит архив и спросит параметры. **Enter** принимает предложенное значение. По умолчанию сеть контейнера — `172.30.55.0/30`, роутер в ней получает `172.30.55.1`, контейнер — `172.30.55.2`. Можно задать другой IPv4 CIDR, который не пересекается с существующими маршрутами. Для списков интерфейсов предлагаются `LAN` и `WAN`.
 
 Для первого запуска укажите IP одного устройства в LAN, например `192.168.88.50`. При пустом поле клиента установится панель, а маршрутизация клиентов останется выключенной. Установщик попросит пароль для панели или сгенерирует его, если нажать Enter.
-
-### По HTTPS
-
-Вставьте команду из инструкции в интерактивный терминал WinBox или SSH. Роутер скачает файлы релиза `v0.1.0` с GitHub Pages. [Команда для установки с GitHub](docs/installation.md#установить-с-https-ссылки)
 
 ## Первый запуск и настройка
 
