@@ -1,5 +1,14 @@
 # Run in an interactive RouterOS terminal with /import file-name=mikrotik-vpn-install.rsc.
 {
+    :global mikrotikVpnReleaseBase
+    :local releaseBase [:tostr $mikrotikVpnReleaseBase]
+    :set mikrotikVpnReleaseBase
+    :if ($releaseBase != "") do={
+        :if ([:pick $releaseBase 0 8] != "https://") do={ :error "The release base must be an HTTPS URL." }
+        :if ([:pick $releaseBase ([:len $releaseBase] - 1) [:len $releaseBase]] = "/") do={
+            :set releaseBase [:pick $releaseBase 0 ([:len $releaseBase] - 1)]
+        }
+    }
     :local serviceName "mikrot-vpn"
     :local vethName "veth-mikrot"
     :local dataList "mikrot-data"
@@ -50,7 +59,7 @@
         :if (($mountName != "") && ($mountName != "flash") && ($freeBytes >= $reserveBytes) && (($fsType = "ext4") || ($fsType = "xfs") || ($fsType = "btrfs"))) do={
             :set ($disks->$mountName) $freeBytes
             :put ("  " . $mountName . " (" . $fsType . ", " . ($freeBytes / 1048576) . " MiB free)")
-            :local hasArchive ([:len [/file/find where name=($mountName . "/" . $archiveName)]] > 0)
+            :local hasArchive (($releaseBase = "") && ([:len [/file/find where name=($mountName . "/" . $archiveName)]] > 0))
             :if ((($hasArchive = true) && ($bestHasArchive = false)) || (($hasArchive = $bestHasArchive) && ($freeBytes > $bestFree))) do={
                 :set bestDisk $mountName
                 :set bestFree $freeBytes
@@ -64,10 +73,11 @@
     :if ($selectedDisk = "") do={ :set selectedDisk $bestDisk }
     :if ([:typeof ($disks->$selectedDisk)] != "num") do={ :error "Enter a mount point from the list above." }
 
-    :local defaultArchive ($selectedDisk . "/" . $archiveName)
-    :put ("Enter a file path or HTTPS URL. Default: " . $defaultArchive)
+    :local defaultSource ($selectedDisk . "/" . $archiveName)
+    :if ($releaseBase != "") do={ :set defaultSource ($releaseBase . "/" . $archiveName) }
+    :put ("Enter a file path or HTTPS URL. Default: " . $defaultSource)
     :local imageSource [/terminal/ask value-name="Container archive path: "]
-    :if ($imageSource = "") do={ :set imageSource $defaultArchive }
+    :if ($imageSource = "") do={ :set imageSource $defaultSource }
     :local fetchImage ([:pick $imageSource 0 8] = "https://")
     :if (!$fetchImage && ([:len [/file/find where name=$imageSource]] = 0)) do={
         :error ("Archive not found: " . $imageSource)
@@ -133,9 +143,15 @@
     :local rootDir ($selectedDisk . "/mikrot-root")
     :if ([:len [/file/find where name=$rootDir]] > 0) do={ :error ("Existing container root directory: " . $rootDir) }
     :if ($fetchImage) do={
-        :set defaultArchive ($selectedDisk . "/mikrot-download-" . [:rndstr length=8] . ".tar")
-        /tool/fetch url=$imageSource dst-path=$defaultArchive check-certificate=yes
-        :set imageSource $defaultArchive
+        :local downloadPath ($selectedDisk . "/mikrot-download-" . [:rndstr length=8] . ".tar")
+        :if ([:len [/file/find where name=$downloadPath]] > 0) do={ :error "Temporary archive path exists. Retry the installation." }
+        :onerror downloadError in={
+            /tool/fetch url=$imageSource dst-path=$downloadPath check-certificate=yes http-max-redirect-count=5
+        } do={
+            :do { /file/remove [/file/find where name=$downloadPath] } on-error={}
+            :error ("Archive download failed: " . $downloadError)
+        }
+        :set imageSource $downloadPath
     }
     :local archiveId [/file/find where name=$imageSource]
     :if ([:len $archiveId] != 1) do={ :error "Container archive is not available." }

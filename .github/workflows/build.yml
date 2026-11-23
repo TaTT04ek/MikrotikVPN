@@ -1,0 +1,54 @@
+name: Build and test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.4'
+      - name: Test Go and check JavaScript syntax
+        run: |
+          go test ./...
+          go vet ./...
+          node --check web/app.js
+      - name: Build and validate RouterOS archives
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          docker buildx create --use --name mikrotik-vpn-ci
+          while read -r platform arch; do
+            docker buildx build --platform "$platform" \
+              --output "type=docker,dest=out/mikrot-$arch.tar" \
+              --tag "mikrotik-vpn:ci-$arch" .
+            docker load --input "out/mikrot-$arch.tar"
+          done <<'IMAGES'
+          linux/arm/v5 armv5
+          linux/arm/v6 armv6
+          linux/arm/v7 armv7
+          linux/arm64 arm64
+          linux/amd64 amd64
+          IMAGES
+          cp routeros/mikrotik-vpn-install.rsc out/
+          cd out
+          sha256sum *.tar *.rsc > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: routeros-installation-files
+          path: out/
+          if-no-files-found: error
+          compression-level: 1
+          retention-days: 7
