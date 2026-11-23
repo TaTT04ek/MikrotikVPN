@@ -72,7 +72,11 @@ Upload `mikrotik-vpn-install.rsc` to the top level of **Files** and the `.tar` i
 
 The installer detects a suitable drive, suggests an archive, and prompts for settings. Press **Enter** to accept a suggested value. The default container subnet is `172.30.55.0/30`, with `172.30.55.1` for the router and `172.30.55.2` for the container. You can specify a different IPv4 CIDR that does not overlap existing routes. The default interface lists are `LAN` and `WAN`.
 
-For the initial setup, enter the IPv4 address of one LAN device, for example `192.168.88.50`. Leaving the client field blank installs the dashboard with client routing disabled. Enter a dashboard password when prompted or press **Enter** to generate one.
+If the installer finds Wi-Fi ports on bridges in the trusted LAN list, it displays them. At **Apply panel routing rules to these Wi-Fi clients [y/N]**, enter `y` to apply dashboard rules to IPv4 traffic from every client on those ports, including devices that connect later. Press **Enter** to skip this step.
+
+For this step, use the [installer from the `main` branch](routeros/mikrotik-vpn-install.rsc) with a local image archive. The HTTPS command above uses the published `v0.1.0` release.
+
+You can also enter a client IPv4 address or subnet, including wired devices. For an initial test, enter a single address such as `192.168.88.50`. To install only the dashboard, skip Wi-Fi setup and leave the client field blank. Enter a dashboard password when prompted or press **Enter** to generate one.
 
 ## Initial setup
 
@@ -87,11 +91,13 @@ The **Overview** screen shows the active exits and charts. The dashboard measure
 
 ### How routing rules work
 
-- In RouterOS, the `mikrot-vpn-clients` address list determines whose IPv4 connections reach the container. The dashboard rules determine the route for those connections.
+- The container receives IPv4 traffic from the selected Wi-Fi ports and devices in the `mikrot-vpn-clients` address list. The dashboard rules determine the route for those connections.
 - Rules are evaluated from top to bottom. The first match wins, based on the service, domain, destination IP, or client IP. Unmatched traffic uses the selected default route.
 - YouTube, GitHub, and Discord have built-in domain sets. Open the **Domains** preview to see their contents. The YouTube set covers the website, video servers, images, and APIs.
 - To associate IP addresses with domain names, enable the container DNS in the dashboard and configure the selected clients to use the container IP as their DNS server. The container returns real IP addresses. If the hostname is hidden and the client uses another resolver, use a destination IP or client rule for predictable matching.
 - Automatic selection uses HTTP probe results and a configured latency threshold. For UDP, it also checks whether the node supports UDP. If there is no suitable node for a protocol, new connections use the direct route. IPv6 follows the existing RouterOS rules.
+
+**Discord.** The built-in domain set is available, and VPN connections to Discord can be intermittent. We plan to improve Discord compatibility in future releases.
 
 To add a device after installation, put its address in the RouterOS client list. If you left the client field blank during installation, enable the marking rules after adding the device.
 

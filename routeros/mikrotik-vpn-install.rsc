@@ -17,6 +17,7 @@
     :local bypassList "mikrot-vpn-bypass"
     :local panelChain "mikrot-vpn-access"
     :local connectionTag "mikrotik-vpn-route"
+    :local wifiPacketMark "mikrotik-vpn-wifi"
     :local ownerTag "MikroTik VPN installer"
 
     :onerror packageError in={ /container/print count-only } do={
@@ -31,7 +32,7 @@
     :if (([:len [/interface/find where name=$vethName]] > 0) || ([:len [/routing/table/find where name=$serviceName]] > 0) || ([:len [/container/mounts/find where list=$dataList]] > 0) || ([:len [/container/envs/find where list=$envListName]] > 0) || ([:len [/ip/firewall/address-list/find where list=$clientList]] > 0) || ([:len [/ip/firewall/address-list/find where list=$bypassList]] > 0)) do={
         :error "MikroTik VPN resource names are already in use. Inspect the existing installation before retrying."
     }
-    :if (([:len [/ip/firewall/filter/find where comment=$ownerTag or chain=$panelChain]] > 0) || ([:len [/ip/firewall/nat/find where comment=$ownerTag]] > 0) || ([:len [/ip/firewall/mangle/find where comment=$ownerTag]] > 0)) do={
+    :if (([:len [/ip/firewall/filter/find where comment=$ownerTag or chain=$panelChain]] > 0) || ([:len [/ip/firewall/nat/find where comment=$ownerTag]] > 0) || ([:len [/ip/firewall/mangle/find where comment=$ownerTag]] > 0) || ([:len [/interface/bridge/filter/find where comment=$ownerTag]] > 0)) do={
         :error "Rules from a previous installation already exist."
     }
 
@@ -120,7 +121,29 @@
         :error "Choose distinct existing interface lists for the trusted LAN and WAN."
     }
 
-    :put "Press Enter to install the panel without enabling client routing."
+    :local wifiPorts [:toarray ""]
+    :foreach portId in=[/interface/bridge/port/find where !disabled] do={
+        :local portName [/interface/bridge/port/get $portId interface]
+        :local bridgeName [/interface/bridge/port/get $portId bridge]
+        :if (([:len [/interface/find where name=$portName and (type="wlan" or type="wifi")]] > 0) && ([:len [/interface/list/member/find where list=$lanList and interface=$bridgeName]] > 0) && ([:len [/interface/list/member/find where list=$wanList and interface=$bridgeName]] = 0)) do={
+            :set ($wifiPorts->$portName) $bridgeName
+        }
+    }
+    :local tunnelWifi false
+    :if ([:len $wifiPorts] > 0) do={
+        :put "Wi-Fi ports on trusted LAN bridges:"
+        :foreach portName,bridgeName in=$wifiPorts do={ :put ("  " . $portName . " on " . $bridgeName) }
+        :local wifiAnswer [/terminal/ask value-name="Apply panel routing rules to these Wi-Fi clients [y/N]: "]
+        :if (($wifiAnswer != "") && ($wifiAnswer != "n") && ($wifiAnswer != "N") && ($wifiAnswer != "y") && ($wifiAnswer != "Y")) do={
+            :error "Enter y or n for Wi-Fi routing."
+        }
+        :set tunnelWifi (($wifiAnswer = "y") || ($wifiAnswer = "Y"))
+        :if ($tunnelWifi && (([:len [/interface/bridge/filter/find where new-packet-mark=$wifiPacketMark]] > 0) || ([:len [/interface/bridge/nat/find where new-packet-mark=$wifiPacketMark]] > 0) || ([:len [/ip/firewall/mangle/find where new-packet-mark=$wifiPacketMark]] > 0))) do={
+            :error "The Wi-Fi packet mark is already in use."
+        }
+    }
+
+    :put "Press Enter to skip selecting an additional client address."
     :local clientInput [/terminal/ask value-name="Client IPv4 address or CIDR: "]
     :local clientSlash [:find $clientInput "/"]
     :if ($clientInput != "") do={
@@ -192,6 +215,15 @@
 
         :local connectionRule [/ip/firewall/mangle/add chain=prerouting in-interface-list=$lanList src-address-list=$clientList dst-address-list=("!" . $bypassList) dst-address-type=!local connection-state=new connection-mark=no-mark action=mark-connection new-connection-mark=$connectionTag passthrough=yes disabled=yes comment=$ownerTag]
         :local routingRule [/ip/firewall/mangle/add chain=prerouting in-interface-list=$lanList src-address-list=$clientList dst-address-list=("!" . $bypassList) dst-address-type=!local action=mark-routing new-routing-mark=$serviceName passthrough=no disabled=yes comment=$ownerTag]
+        :local wifiRoutingRules [:toarray ""]
+        :if ($tunnelWifi) do={
+            :local wifiConnectionRule [/ip/firewall/mangle/add chain=prerouting in-interface-list=$lanList packet-mark=$wifiPacketMark dst-address-list=("!" . $bypassList) dst-address-type=!local connection-state=new connection-mark=no-mark action=mark-connection new-connection-mark=$connectionTag passthrough=yes disabled=yes comment=$ownerTag]
+            :local wifiRoutingRule [/ip/firewall/mangle/add chain=prerouting in-interface-list=$lanList packet-mark=$wifiPacketMark dst-address-list=("!" . $bypassList) dst-address-type=!local action=mark-routing new-routing-mark=$serviceName passthrough=no disabled=yes comment=$ownerTag]
+            :set wifiRoutingRules ($wifiConnectionRule, $wifiRoutingRule)
+            :foreach portName,bridgeName in=$wifiPorts do={
+                /interface/bridge/filter/add chain=input in-bridge=$bridgeName in-interface=$portName packet-type=host mac-protocol=ip packet-mark=no-mark action=mark-packet new-packet-mark=$wifiPacketMark passthrough=yes disabled=yes comment=$ownerTag
+            }
+        }
         :local firstFastTrack [:pick [/ip/firewall/filter/find where chain=forward and action=fasttrack-connection and !disabled] 0]
         :if ([:typeof $firstFastTrack] = "id") do={
             /ip/firewall/filter/add chain=forward connection-state=established,related connection-mark=$connectionTag action=accept place-before=$firstFastTrack comment=$ownerTag
@@ -222,6 +254,10 @@
             /ip/firewall/mangle/enable $connectionRule
             /ip/firewall/mangle/enable $routingRule
         }
+        :if ($tunnelWifi) do={
+            /ip/firewall/mangle/enable $wifiRoutingRules
+            /interface/bridge/filter/enable [/interface/bridge/filter/find where comment=$ownerTag]
+        }
     } do={
         :put ("Installation failed: " . $installError)
         :local failedContainer [/container/find where name=$serviceName]
@@ -229,6 +265,7 @@
             :do { /container/stop $failedContainer } on-error={}
             :do { /container/remove $failedContainer } on-error={}
         }
+        :do { /interface/bridge/filter/remove [/interface/bridge/filter/find where comment=$ownerTag] } on-error={}
         :do { /ip/firewall/mangle/remove [/ip/firewall/mangle/find where comment=$ownerTag] } on-error={}
         :do { /ip/firewall/filter/remove [/ip/firewall/filter/find where comment=$ownerTag] } on-error={}
         :do { /ip/firewall/nat/remove [/ip/firewall/nat/find where comment=$ownerTag] } on-error={}
@@ -243,5 +280,6 @@
     }
     :put ("Panel: http://" . $containerIp . ":8080 (user: admin)")
     :if ($generatedPassword) do={ :put ("Generated panel password: " . $panelPassword) }
-    :if ($clientInput = "") do={ :put "Client routing is disabled. The web panel is ready." }
+    :if ($tunnelWifi) do={ :put "Wi-Fi client routing is enabled for the listed ports." }
+    :if (($clientInput = "") && !$tunnelWifi) do={ :put "Client routing is disabled. The web panel is ready." }
 }
