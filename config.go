@@ -38,8 +38,9 @@ type settings struct {
 
 type state struct {
 	Settings          settings
-	Subscription      string       `json:",omitempty"`
-	Sources           []nodeSource `json:",omitempty"`
+	Subscription      string              `json:",omitempty"`
+	Sources           []nodeSource        `json:",omitempty"`
+	Services          []serviceDefinition `json:",omitempty"`
 	Nodes             []node
 	TelegramCIDRs     []string
 	TelegramUpdatedAt time.Time
@@ -57,7 +58,7 @@ var domainPattern = regexp.MustCompile(`^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?
 
 func validAction(action string) bool { return action == direct || action == "VPN" }
 
-func normalizeSettings(s *settings) error {
+func normalizeSettings(s *settings, custom ...serviceDefinition) error {
 	if _, err := remoteURL(s.ProbeURL); err != nil {
 		return errors.New("проверьте URL теста")
 	}
@@ -77,7 +78,7 @@ func normalizeSettings(s *settings) error {
 		ok := false
 		switch r.Match {
 		case "SERVICE":
-			_, ok = findService(r.Value)
+			_, ok = findService(r.Value, custom...)
 		case "DOMAIN", "DOMAIN-SUFFIX":
 			ok = len(r.Value) <= 253 && domainPattern.MatchString(r.Value)
 		case "IP-CIDR", "SRC-IP-CIDR":
@@ -104,7 +105,7 @@ func coreConfig(s state, tun bool, secret string) ([]byte, error) {
 		match := r.Match + "," + r.Value
 		noResolve := r.Match == "IP-CIDR"
 		if r.Match == "SERVICE" {
-			preset, ok := findService(r.Value)
+			preset, ok := findService(r.Value, s.Services...)
 			if !ok {
 				return nil, fmt.Errorf("неизвестный сервис %q", r.Value)
 			}

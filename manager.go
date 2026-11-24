@@ -130,11 +130,11 @@ func notify(ch chan struct{}) {
 }
 
 func (m *manager) saveSettings(ctx context.Context, s settings) error {
-	if err := normalizeSettings(&s); err != nil {
-		return err
-	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if err := normalizeSettings(&s, m.current.Services...); err != nil {
+		return err
+	}
 	next := m.current
 	next.Settings = s
 	err := m.apply(ctx, next)
@@ -250,5 +250,5 @@ func loadState(dir string) (state, string, error) {
 			return s, path, err
 		}
 	}
-	return s, path, normalizeSettings(&s.Settings)
+	return s, path, normalizeSettings(&s.Settings, s.Services...)
 }

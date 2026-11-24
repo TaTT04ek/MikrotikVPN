@@ -85,7 +85,7 @@ The dashboard displays its controls in Russian. The steps below use English tran
 1. From a trusted LAN, open the address shown by the installer. The default address is `http://172.30.55.2:8080`. Sign in as `admin` with the password set during installation.
 2. Under **Node sources**, paste a subscription URL or a single connection key and click **Add**. Repeat for each source. Supported protocols include VLESS/REALITY, VMess, Trojan, Shadowsocks, Hysteria2, and TUIC. All sources together can contain up to 64 unique nodes. You can refresh each subscription separately or remove any source.
 3. Click **Check nodes**. The gateway can select different servers for TCP and UDP. The dashboard shows latency and marks nodes that support UDP.
-4. Add your first rule under **Routing → Add service → YouTube → Via VPN**. Keep **No match → Direct**, then click **Save settings**. From the same client device, test the service and check that direct connections still work.
+4. Add your first rule under **Routing → Service catalog → YouTube → Via VPN**. Keep **No match → Direct**, then click **Save settings**. From the same client device, test the service and check that direct connections still work.
 
 The **Overview** screen shows the active exits and charts. The dashboard measures traffic on the container's network interface and latency through HTTP checks of the selected nodes. Charts collect samples while the dashboard is open. The browser remembers your theme preference.
 
@@ -93,11 +93,13 @@ The **Overview** screen shows the active exits and charts. The dashboard measure
 
 - The container receives IPv4 traffic from the selected Wi-Fi ports and devices in the `mikrot-vpn-clients` address list. The dashboard rules determine the route for those connections.
 - Rules are evaluated from top to bottom. The first match wins, based on the service, domain, destination IP, or client IP. Unmatched traffic uses the selected default route.
-- YouTube, GitHub, and Discord have built-in domain sets. Open the **Domains** preview to see their contents. The YouTube set covers the website, video servers, images, and APIs.
+- Open the **Service catalog** to find a preset and add it to the routing rules. Open the **Domains** preview to see its contents. The YouTube set covers the website, video servers, images, and APIs.
 - To associate IP addresses with domain names, enable the container DNS in the dashboard and configure the selected clients to use the container IP as their DNS server. The container returns real IP addresses. If the hostname is hidden and the client uses another resolver, use a destination IP or client rule for predictable matching.
 - Automatic selection uses HTTP probe results and a configured latency threshold. For UDP, it also checks whether the node supports UDP. If there is no suitable node for a protocol, new connections use the direct route. IPv6 follows the existing RouterOS rules.
 
 **Discord.** The built-in domain set is available, and VPN connections to Discord can be intermittent. We plan to improve Discord compatibility in future releases.
+
+Use **Service catalog → Import JSON** to upload a [service pack](web/service-pack.json). Each service needs a unique `id`, a `label`, and a `domains` list. Use `example.org` for an exact match or `+.example.org` to include subdomains. After importing, select the services you need and save your routing rules.
 
 To add a device after installation, put its address in the RouterOS client list. If you left the client field blank during installation, enable the marking rules after adding the device.
 
@@ -110,7 +112,7 @@ Settings and subscription data are stored in `/data/state.json` inside the conta
 
 ### Telegram IP ranges
 
-In the dashboard, choose **Routing → Add service → Telegram → Via VPN**, then save your settings. The rule matches the destination IPv4 address against Telegram's ranges. Clients can keep using their current DNS resolver.
+In the dashboard, choose **Routing → Service catalog → Telegram → Via VPN**, then save your settings. The rule matches the destination IPv4 address against Telegram's ranges. Clients can keep using their current DNS resolver.
 
 The container checks the official list every three hours. Under **Telegram CIDR**, click **Refresh CIDR** to check immediately or view the ranges and the last successful update. If the direct connection to the source fails, the container retries through the selected TCP VPN exit. A successful download replaces the entire previous list. If the update fails, the container keeps the last successfully fetched list or uses the built-in list on first run. [Official Telegram CIDR list](https://core.telegram.org/resources/cidr.txt)
 

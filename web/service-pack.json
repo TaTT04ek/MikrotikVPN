@@ -1,0 +1,6 @@
+{
+  "services": [
+    {"id": "wikipedia", "label": "Wikipedia", "domains": ["+.wikipedia.org", "+.wikimedia.org"]},
+    {"id": "openstreetmap", "label": "OpenStreetMap", "domains": ["+.openstreetmap.org"]}
+  ]
+}

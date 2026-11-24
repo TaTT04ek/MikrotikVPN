@@ -114,6 +114,11 @@ button.secondary { background: var(--soft); color: var(--ink); border-color: var
 .source-row > div:first-child { flex: 1 1 140px; min-width: 0; overflow-wrap: anywhere; }
 .source-row .actions { margin-top: 0; }
 .source-row .chart-caption { margin: 0; }
+#service-library { color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; width: min(560px, calc(100% - 24px)); max-height: 90dvh; }
+#service-library::backdrop { background: #04100cb0; }
+#service-library h2 { margin: 0; }
+.service-choices { display: grid; gap: 6px; margin-top: 12px; max-height: 42dvh; overflow: auto; }
+.service-choices button { text-align: left; overflow-wrap: anywhere; }
 .inline { display: flex; align-items: center; gap: 8px; }
 .inline select { width: auto; }
 .rule { display: grid; grid-template-columns: minmax(118px, 1.2fr) minmax(125px, 2fr) minmax(102px, 1fr) auto; gap: 8px; align-items: end; padding: 10px; margin: 8px 0; border: 1px solid var(--line); border-radius: 9px; }

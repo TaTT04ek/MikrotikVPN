@@ -99,7 +99,15 @@ func webHandler(m *manager, password string) http.Handler {
 		status.Traffic = readTraffic()
 		writeJSON(w, 200, status)
 	})
-	mux.HandleFunc("GET /api/services", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, servicePresets) })
+	mux.HandleFunc("GET /api/services", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, m.services()) })
+	mux.HandleFunc("POST /api/services/import", func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			Services []serviceDefinition `json:"services"`
+		}
+		if readJSON(w, r, &body) {
+			result(w, m.importServices(r.Context(), body.Services))
+		}
+	})
 	mux.HandleFunc("POST /api/services/telegram/refresh", func(w http.ResponseWriter, r *http.Request) {
 		if !readJSON(w, r, &struct{}{}) {
 			return

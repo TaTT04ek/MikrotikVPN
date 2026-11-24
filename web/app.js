@@ -3,6 +3,7 @@ import { setupDashboard, updateDashboard } from "./dashboard.js";
 const el = (id) => document.getElementById(id);
 const settingsForm = el("settings");
 const rules = el("rules");
+const serviceLibrary = el("service-library");
 const fields = {
   probeUrl: el("probe-url"), probeInterval: el("interval"), timeout: el("timeout"),
   tolerance: el("tolerance"), refreshHours: el("refresh-hours"), defaultAction: el("default-action")
@@ -44,6 +45,31 @@ function updateOrder() {
   el("add-service").disabled = !catalog?.length || rules.children.length >= 128;
 }
 
+function fillServices(select) {
+  const previous = select.value;
+  select.replaceChildren(...catalog.map((preset) => new Option(preset.label, preset.id)));
+  if (previous) select.value = previous;
+}
+
+function showServiceChoices() {
+  const query = el("service-search").value.trim().toLowerCase();
+  const matches = catalog.filter((item) => item.label.toLowerCase().includes(query) || item.id.includes(query));
+  el("service-choices").replaceChildren(...matches.map((preset) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "secondary";
+    button.textContent = preset.label;
+    button.disabled = rules.children.length >= 128;
+    button.addEventListener("click", () => {
+      addRule({ match: "SERVICE", value: preset.id, action: "VPN" });
+      updateOrder();
+      serviceLibrary.close();
+    });
+    return button;
+  }));
+  if (!matches.length) el("service-choices").textContent = "Сервисы не найдены";
+}
+
 function addRule(rule = { match: "DOMAIN-SUFFIX", value: "", action: "VPN" }) {
   const row = el("rule-template").content.firstElementChild.cloneNode(true);
   const match = row.querySelector(".match");
@@ -51,7 +77,7 @@ function addRule(rule = { match: "DOMAIN-SUFFIX", value: "", action: "VPN" }) {
   const service = row.querySelector(".service");
   const preview = row.querySelector(".preview");
   match.value = rule.match;
-  for (const preset of catalog) service.add(new Option(preset.label, preset.id));
+  fillServices(service);
   if (rule.match === "SERVICE") service.value = rule.value;
   else value.value = rule.value;
   row.querySelector(".action").value = rule.action;
@@ -220,8 +246,41 @@ el("probe").addEventListener("click", (event) => mutate(event.currentTarget, "/a
 el("refresh-telegram").addEventListener("click", (event) => mutate(event.currentTarget, "/api/services/telegram/refresh", "POST", {}, "Список CIDR Telegram обновлён."));
 el("add-rule").addEventListener("click", () => { addRule(); updateOrder(); });
 el("add-service").addEventListener("click", () => {
-  addRule({ match: "SERVICE", value: catalog[0].id, action: "VPN" });
-  updateOrder();
+  el("service-search").value = "";
+  el("service-import-status").textContent = "";
+  showServiceChoices();
+  serviceLibrary.showModal();
+});
+el("close-library").addEventListener("click", () => serviceLibrary.close());
+el("service-search").addEventListener("input", showServiceChoices);
+el("import-services").addEventListener("click", () => el("service-file").click());
+el("service-file").addEventListener("change", async (event) => {
+  const file = event.target.files[0];
+  event.target.value = "";
+  if (!file || busy) return;
+  const status = el("service-import-status");
+  const button = el("import-services");
+  busy = button.disabled = true;
+  try {
+    if (file.size > 65536) throw new Error("Максимальный размер пакета — 64 КиБ");
+    let data;
+    try {
+      data = JSON.parse(await file.text());
+    } catch {
+      throw new Error("Не удалось прочитать JSON");
+    }
+    await api("/api/services/import", "POST", data);
+    catalog = await api("/api/services");
+    rules.querySelectorAll(".service").forEach(fillServices);
+    el("service-search").value = "";
+    showServiceChoices();
+    updateOrder();
+    status.textContent = "Пакет добавлен в каталог";
+  } catch (err) {
+    status.textContent = err.message;
+  } finally {
+    busy = button.disabled = false;
+  }
 });
 el("dns-mapping").addEventListener("change", (event) => { el("dns-help").hidden = !event.target.checked; });
 settingsForm.addEventListener("submit", (event) => {

@@ -84,7 +84,7 @@
         <div id="rules"></div>
         <div class="actions">
           <button id="add-rule" class="secondary" type="button" disabled>Добавить правило</button>
-          <button id="add-service" class="secondary" type="button" disabled>Добавить сервис</button>
+          <button id="add-service" class="secondary" type="button" disabled>Каталог сервисов</button>
           <label class="inline">Без совпадений<select id="default-action"><option value="DIRECT">Напрямую</option><option value="VPN">Через VPN</option></select></label>
         </div>
         <label id="dns-option" class="toggle" hidden><input id="dns-mapping" type="checkbox">Использовать DNS контейнера для сопоставления IP с доменами</label>
@@ -109,6 +109,17 @@
       </section>
     </form>
   </main>
+  <dialog id="service-library" aria-labelledby="service-library-title">
+    <div class="panel-title"><h2 id="service-library-title">Каталог сервисов</h2><button id="close-library" class="secondary" type="button">Закрыть</button></div>
+    <div class="actions">
+      <button id="import-services" class="secondary" type="button">Импортировать JSON</button>
+      <a href="./service-pack.json" download>Скачать пример</a>
+      <input id="service-file" type="file" accept=".json,application/json" hidden>
+    </div>
+    <p id="service-import-status" role="status"></p>
+    <label>Поиск по названию<input id="service-search" type="search" maxlength="80"></label>
+    <div id="service-choices" class="service-choices"></div>
+  </dialog>
   <template id="rule-template">
     <div class="rule">
       <label>Условие<select class="match"><option value="DOMAIN">Домен</option><option value="DOMAIN-SUFFIX">Домен и поддомены</option><option value="IP-CIDR">IP назначения</option><option value="SRC-IP-CIDR">IP устройства</option><option value="SERVICE">Известный сервис</option></select></label>
