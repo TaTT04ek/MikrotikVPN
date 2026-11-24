@@ -13,6 +13,10 @@ let busy = false;
 let requestNumber = 0;
 let catalog;
 let renderedSources = "";
+let renderedNodes = "";
+let pollTimer;
+let polling = false;
+let pollDelay = 10000;
 
 async function api(path, method = "GET", data) {
   const options = data === undefined ? { method } : {
@@ -167,6 +171,7 @@ async function loadStatus() {
   const request = ++requestNumber;
   const data = await api("/api/status");
   if (request !== requestNumber) return;
+  el("poll-status").hidden = true;
   const selected = data.nodes.find((node) => node.id === data.selected);
   const selectedUdp = data.nodes.find((node) => node.id === data.selectedUdp);
   el("mode").textContent = data.tun ? "Шлюз RouterOS · IPv4" : "Локальный прокси · IPv4";
@@ -185,6 +190,19 @@ async function loadStatus() {
     el("telegram-cidrs").textContent = cidrs.join(" · ");
   }
   renderSources(data.sources);
+  renderNodes(data, checked);
+  if (!initialized && !busy) {
+    catalog ??= await api("/api/services");
+    if (request !== requestNumber) return;
+    el("dns-option").hidden = !data.tun;
+    loadSettings(data.settings);
+  }
+}
+
+function renderNodes(data, checked) {
+  const signature = JSON.stringify([data.nodes, data.selected, data.selectedUdp, Boolean(checked)]);
+  if (signature === renderedNodes) return;
+  renderedNodes = signature;
   el("count").textContent = data.nodes.length;
   const list = data.nodes.map((node) => {
     const item = document.createElement("div");
@@ -204,12 +222,6 @@ async function loadStatus() {
     list.push(empty);
   }
   el("servers").replaceChildren(...list);
-  if (!initialized && !busy) {
-    catalog ??= await api("/api/services");
-    if (request !== requestNumber) return;
-    el("dns-option").hidden = !data.tun;
-    loadSettings(data.settings);
-  }
 }
 
 async function mutate(button, path, method, data, message, after) {
@@ -297,5 +309,27 @@ settingsForm.addEventListener("submit", (event) => {
   mutate(event.submitter, "/api/settings", "PUT", data, "Настройки сохранены.");
 });
 setupDashboard();
-loadStatus().catch((err) => notice(err.message, true));
-setInterval(() => { if (!busy && !document.hidden) loadStatus().catch(() => {}); }, 4000);
+
+async function pollStatus() {
+  clearTimeout(pollTimer);
+  if (document.hidden || polling) return;
+  if (!busy) {
+    polling = true;
+    try {
+      await loadStatus();
+      pollDelay = 10000;
+    } catch {
+      el("poll-status").hidden = false;
+      pollDelay = Math.min(pollDelay * 2, 60000);
+    } finally {
+      polling = false;
+    }
+  }
+  if (!document.hidden) pollTimer = setTimeout(pollStatus, pollDelay);
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) clearTimeout(pollTimer);
+  else pollStatus();
+});
+pollStatus();

@@ -2,6 +2,7 @@ const el = (id) => document.getElementById(id);
 const prefersDark = matchMedia("(prefers-color-scheme: dark)");
 const speed = [];
 const latency = [];
+const visibleCharts = new Set();
 const decimal = new Intl.NumberFormat("ru", { maximumFractionDigits: 1 });
 const clock = new Intl.DateTimeFormat("ru", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 let previousTraffic;
@@ -19,15 +20,19 @@ function bitrate(bytesPerSecond) {
 }
 
 function drawChart(canvas, samples, unit, minimum) {
+  if (!visibleCharts.has(canvas) || document.hidden) return;
   const width = canvas.clientWidth;
   const height = canvas.clientHeight;
   if (!width || !height) return;
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   const scale = Math.min(devicePixelRatio || 1, 2);
-  canvas.width = Math.round(width * scale);
-  canvas.height = Math.round(height * scale);
+  const pixelWidth = Math.round(width * scale);
+  const pixelHeight = Math.round(height * scale);
+  if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
+  if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  ctx.clearRect(0, 0, width, height);
   const style = getComputedStyle(canvas);
   const bottom = height - 24;
   const top = 9;
@@ -36,6 +41,8 @@ function drawChart(canvas, samples, unit, minimum) {
   const limit = Math.max(minimum, ...values);
 
   ctx.font = "11px system-ui";
+  ctx.textAlign = "left";
+  ctx.lineWidth = 1;
   const left = Math.ceil(ctx.measureText(unit(limit)).width) + 8;
   ctx.fillStyle = style.getPropertyValue("--muted");
   ctx.strokeStyle = style.getPropertyValue("--line");
@@ -83,9 +90,17 @@ function drawChart(canvas, samples, unit, minimum) {
   }
 }
 
-function draw() {
+function drawTraffic() {
   drawChart(el("traffic-chart"), speed, bitrate, 125);
+}
+
+function drawLatency() {
   drawChart(el("latency-chart"), latency, (value) => `${decimal.format(value)} мс`, 10);
+}
+
+function draw() {
+  drawTraffic();
+  drawLatency();
 }
 
 export function setupDashboard() {
@@ -103,7 +118,22 @@ export function setupDashboard() {
     applyTheme();
   });
   prefersDark.addEventListener("change", applyTheme);
-  new ResizeObserver(draw).observe(el("statistics").closest(".charts"));
+  const visibility = new IntersectionObserver((entries) => {
+    for (const { target, isIntersecting } of entries) {
+      if (isIntersecting) visibleCharts.add(target);
+      else visibleCharts.delete(target);
+    }
+    draw();
+  });
+  const resize = new ResizeObserver(draw);
+  for (const id of ["traffic-chart", "latency-chart"]) {
+    visibility.observe(el(id));
+    resize.observe(el(id));
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) previousTraffic = undefined;
+    else draw();
+  });
   const updateNavigation = () => {
     const destination = location.hash || "#overview";
     for (const link of document.querySelectorAll("nav a")) {
@@ -126,11 +156,10 @@ export function updateDashboard(data, tcp, udp) {
     latency.push({ at: checked, a, b });
     if (latency.length > 40) latency.shift();
     lastCheck = checked;
-  }
-  if (latency.some(({ a, b }) => a !== null || b !== null)) {
-    el("latency-caption").textContent = "HTTP-проверки выбранных выходов, до 40 измерений за сеанс.";
-  } else if (checked > 0) {
-    el("latency-caption").textContent = "Нет успешных проверок выбранных VPN-узлов.";
+    el("latency-caption").textContent = latency.some(({ a, b }) => a !== null || b !== null)
+      ? "HTTP-проверки выбранных выходов."
+      : "Нет успешных проверок выбранных VPN-узлов.";
+    drawLatency();
   }
 
   const traffic = data.traffic;
@@ -140,7 +169,7 @@ export function updateDashboard(data, tcp, udp) {
     let sent = null;
     if (traffic && previousTraffic?.interface === traffic.interface) {
       const seconds = (traffic.sampledAt - previousTraffic.sampledAt) / 1000;
-      if (seconds > 0 && seconds < 20 && traffic.received >= previousTraffic.received && traffic.sent >= previousTraffic.sent) {
+      if (seconds > 0 && seconds <= 25 && traffic.received >= previousTraffic.received && traffic.sent >= previousTraffic.sent) {
         received = (traffic.received - previousTraffic.received) / seconds;
         sent = (traffic.sent - previousTraffic.sent) / seconds;
       }
@@ -148,12 +177,12 @@ export function updateDashboard(data, tcp, udp) {
     el("rx-rate").textContent = received === null ? "—" : bitrate(received);
     el("tx-rate").textContent = sent === null ? "—" : bitrate(sent);
     el("traffic-caption").textContent = !traffic ? "Счётчики интерфейса недоступны." : received === null
-      ? "Ожидаем следующий замер." : "Весь трафик интерфейса контейнера, до 75 замеров за сеанс.";
+      ? "Ожидаем следующий замер." : "Весь трафик интерфейса контейнера.";
     if (traffic) {
       speed.push({ at: traffic.sampledAt, a: received, b: sent });
-      if (speed.length > 75) speed.shift();
+      if (speed.length > 60) speed.shift();
+      drawTraffic();
     }
     previousTraffic = traffic;
   }
-  draw();
 }

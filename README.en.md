@@ -85,9 +85,9 @@ The dashboard displays its controls in Russian. The steps below use English tran
 1. From a trusted LAN, open the address shown by the installer. The default address is `http://172.30.55.2:8080`. Sign in as `admin` with the password set during installation.
 2. Under **Node sources**, paste a subscription URL or a single connection key and click **Add**. Repeat for each source. Supported protocols include VLESS/REALITY, VMess, Trojan, Shadowsocks, Hysteria2, and TUIC. All sources together can contain up to 64 unique nodes. You can refresh each subscription separately or remove any source.
 3. Click **Check nodes**. The gateway can select different servers for TCP and UDP. The dashboard shows latency and marks nodes that support UDP.
-4. Add your first rule under **Routing → Service catalog → YouTube → Via VPN**. Keep **No match → Direct**, then click **Save settings**. From the same client device, test the service and check that direct connections still work.
+4. Add your first rule under **Routing → Service catalog → YouTube → Via VPN**. Keep **When no rule matches → Direct**, then click **Save settings**. From the same client device, test the service and check that direct connections still work.
 
-The **Overview** screen shows the active exits and charts. The dashboard measures traffic on the container's network interface and latency through HTTP checks of the selected nodes. Charts collect samples while the dashboard is open. The browser remembers your theme preference.
+The **Network monitor** shows active exits and traffic on the container's network interface. Expand **Latency history** to see HTTP check timings for the selected nodes. The dashboard polls every 10 seconds while the tab is visible. The browser remembers your theme preference.
 
 ### How routing rules work
 

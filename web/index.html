@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,7 +14,6 @@
     <a class="brand" href="#overview"><span class="brand-icon" aria-hidden="true">↗</span><span>MikroTik VPN</span></a>
     <nav aria-label="Разделы панели">
       <a href="#overview" aria-current="location">Обзор</a>
-      <a href="#statistics">Статистика</a>
       <a href="#subscription-title">Источники</a>
       <a href="#servers-title">Серверы</a>
       <a href="#rules-title">Правила</a>
@@ -23,41 +22,40 @@
   </aside>
   <main id="overview">
     <header class="top">
-      <div><p id="mode" class="caption"></p><h1>Обзор сети</h1></div>
-      <label class="theme">Тема<select id="theme"><option value="auto">Системная</option><option value="light">Светлая</option><option value="dark">Тёмная</option></select></label>
+      <div><h1>Сетевой монитор</h1><p id="mode" class="caption"></p></div>
+      <div class="top-actions">
+        <label class="theme">Тема<select id="theme"><option value="dark">Тёмная</option><option value="light">Светлая</option><option value="auto">Системная</option></select></label>
+        <button id="probe" type="button">Проверить узлы</button>
+      </div>
     </header>
     <p id="notice" role="status" aria-live="polite" hidden></p>
-    <section class="summary" aria-label="Активные маршруты">
-      <div>
-        <p class="caption">Текущий маршрут</p>
+    <div class="monitor-grid">
+      <section class="panel traffic-panel" aria-labelledby="statistics">
+        <div class="panel-title"><h2 id="statistics">Трафик контейнера</h2><span id="traffic-iface" class="caption"></span></div>
+        <div class="legend"><span class="key rx">Приём <strong id="rx-rate">—</strong></span><span class="key tx">Передача <strong id="tx-rate">—</strong></span></div>
+        <canvas id="traffic-chart" role="img" aria-label="История скорости приёма и передачи" aria-describedby="traffic-caption"></canvas>
+        <p class="chart-caption" id="traffic-caption">Ожидаем счётчики интерфейса.</p>
+      </section>
+      <section class="panel monitor-status" aria-labelledby="route-title">
+        <div class="panel-title"><h2 id="route-title">Активные выходы</h2></div>
         <div class="route-grid">
           <div><span class="protocol">TCP</span><strong id="active">Загрузка…</strong></div>
           <div><span class="protocol">UDP</span><strong id="active-udp">—</strong></div>
         </div>
         <p class="route-health"><span id="health-dot" aria-hidden="true"></span><span id="health">Получаем состояние ядра</span></p>
-      </div>
-      <button id="probe" type="button">Проверить узлы</button>
-    </section>
-    <section class="stats" aria-label="Сводка сети">
-      <div class="metric"><p>Доступные узлы</p><strong id="available">—</strong></div>
-      <div class="metric"><p>Задержка TCP</p><strong id="delay">—</strong></div>
-      <div class="metric"><p>Входящий трафик</p><strong id="rx-rate">—</strong></div>
-      <div class="metric"><p>Исходящий трафик</p><strong id="tx-rate">—</strong></div>
-    </section>
-    <section class="grid charts" aria-labelledby="statistics">
-      <div class="panel">
-        <div class="panel-title"><h2 id="statistics">Трафик контейнера</h2><span id="traffic-iface" class="caption"></span></div>
-        <div class="legend"><span class="key rx">Приём</span><span class="key tx">Передача</span></div>
-        <canvas id="traffic-chart" role="img" aria-label="История скорости приёма и передачи" aria-describedby="traffic-caption"></canvas>
-        <p class="chart-caption" id="traffic-caption">Ожидаем счётчики интерфейса.</p>
-      </div>
-      <div class="panel">
-        <div class="panel-title"><h2>Задержка узлов</h2></div>
+        <p id="poll-status" class="chart-caption" role="status" hidden>Не удалось обновить данные панели.</p>
+        <div class="stats" aria-label="Сводка сети">
+          <div class="metric"><p>Доступные узлы</p><strong id="available">—</strong></div>
+          <div class="metric"><p>Задержка TCP</p><strong id="delay">—</strong></div>
+        </div>
+      </section>
+      <details class="panel latency-panel" id="latency-panel">
+        <summary>История задержки</summary>
         <div class="legend"><span class="key rx">TCP</span><span class="key tx">UDP</span></div>
         <canvas id="latency-chart" role="img" aria-label="История задержки выбранных узлов" aria-describedby="latency-caption"></canvas>
         <p class="chart-caption" id="latency-caption">Ожидаем проверку узлов.</p>
-      </div>
-    </section>
+      </details>
+    </div>
     <div class="grid">
       <section class="panel" aria-labelledby="subscription-title">
         <h2 id="subscription-title">Источники узлов</h2>
@@ -84,8 +82,8 @@
         <div id="rules"></div>
         <div class="actions">
           <button id="add-rule" class="secondary" type="button" disabled>Добавить правило</button>
-          <button id="add-service" class="secondary" type="button" disabled>Каталог сервисов</button>
-          <label class="inline">Без совпадений<select id="default-action"><option value="DIRECT">Напрямую</option><option value="VPN">Через VPN</option></select></label>
+          <button id="add-service" type="button" disabled>Каталог сервисов</button>
+          <label class="inline">Если ни одно правило не подошло<select id="default-action"><option value="DIRECT">Напрямую</option><option value="VPN">Через VPN</option></select></label>
         </div>
         <label id="dns-option" class="toggle" hidden><input id="dns-mapping" type="checkbox">Использовать DNS контейнера для сопоставления IP с доменами</label>
         <p id="dns-help" hidden>Укажи IP контейнера в настройках DNS нужных клиентов. Контейнер будет возвращать обычные IPv4-адреса.</p>
@@ -105,8 +103,8 @@
           <label>Обновление подписки, ч<input type="number" id="refresh-hours" min="0" max="168" required></label>
         </div>
         <p>Переключение происходит при улучшении на величину больше порога или при отказе текущего узла. Ноль часов отключает автообновление.</p>
-        <button id="save" type="submit" disabled>Сохранить настройки</button>
       </section>
+      <div class="settings-actions"><button id="save" type="submit" disabled>Сохранить настройки</button></div>
     </form>
   </main>
   <dialog id="service-library" aria-labelledby="service-library-title">
