@@ -46,3 +46,42 @@ func TestServicePackImportAndRouting(t *testing.T) {
 		t.Fatal("wrong service routing rule")
 	}
 }
+
+func TestBundledServicePackKeepsExistingExample(t *testing.T) {
+	raw, err := webAssets.ReadFile("web/service-pack.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var pack struct {
+		Services []serviceDefinition `json:"services"`
+	}
+	if err := json.Unmarshal(raw, &pack); err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	m := manager{current: defaultState(), path: filepath.Join(dir, "state.json")}
+	ctx := context.Background()
+	example := []serviceDefinition{
+		{ID: "wikipedia", Label: "Wikipedia", Domains: []string{"+.wikipedia.org", "+.wikimedia.org"}},
+		{ID: "openstreetmap", Label: "OpenStreetMap", Domains: []string{"+.openstreetmap.org"}},
+	}
+	if err := m.importServices(ctx, example); err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		if err := m.importServices(ctx, pack.Services); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saved, _, err := loadState(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(saved.Services) != len(pack.Services) || len(saved.Settings.Rules) != 0 {
+		t.Fatal("bundled import changed rules or duplicated an existing service")
+	}
+	conflict := []serviceDefinition{{ID: "wikipedia", Label: "Wikipedia", Domains: []string{"example.com"}}}
+	if err := m.importServices(ctx, conflict); err == nil {
+		t.Fatal("import overwrote an existing service")
+	}
+}

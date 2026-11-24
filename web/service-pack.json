@@ -1,6 +1,24 @@
 {
   "services": [
+    {"id": "bluesky", "label": "Bluesky", "domains": ["+.bsky.app", "+.bsky.social", "+.bsky.network"]},
+    {"id": "chatgpt", "label": "ChatGPT", "domains": ["+.chatgpt.com", "+.openai.com", "+.oaistatic.com", "+.oaiusercontent.com", "+.oaistatsig.com"]},
+    {"id": "claude", "label": "Claude", "domains": ["+.claude.ai", "+.claude.com", "+.anthropic.com", "+.claudeusercontent.com"]},
+    {"id": "epic-games", "label": "Epic Games / Fortnite", "domains": ["+.epicgames.com", "+.epicgamescdn.com", "+.fortnite.com"]},
+    {"id": "facebook", "label": "Facebook", "domains": ["+.facebook.com", "+.facebook.net", "+.fbcdn.net", "+.fbsbx.com", "fb.me"]},
+    {"id": "instagram", "label": "Instagram", "domains": ["+.instagram.com", "+.cdninstagram.com", "+.ig.me"]},
+    {"id": "netflix", "label": "Netflix", "domains": ["+.netflix.com", "+.netflix.net", "+.nflxext.com", "+.nflximg.com", "+.nflximg.net", "+.nflxsearch.net", "+.nflxso.net", "+.nflxvideo.net"]},
+    {"id": "openstreetmap", "label": "OpenStreetMap", "domains": ["+.openstreetmap.org"]},
+    {"id": "reddit", "label": "Reddit", "domains": ["+.reddit.com", "+.redd.it", "+.redditmedia.com", "+.redditstatic.com", "reddit.map.fastly.net"]},
+    {"id": "signal", "label": "Signal", "domains": ["+.signal.org", "+.signal.art", "+.signal.group", "+.signal.link", "+.signal.me", "+.signal.tube"]},
+    {"id": "slack", "label": "Slack", "domains": ["+.slack.com", "+.slack-edge.com", "+.slack-files.com", "+.slack-imgs.com", "+.slack-msgs.com", "+.slackb.com"]},
+    {"id": "soundcloud", "label": "SoundCloud", "domains": ["+.soundcloud.com", "+.sndcdn.com"]},
+    {"id": "spotify", "label": "Spotify", "domains": ["+.spotify.com", "+.scdn.co", "+.spotifycdn.com", "+.spotifycdn.net", "+.spoti.fi", "+.spotify.link", "audio-ak-spotify-com.akamaized.net", "audio4-ak-spotify-com.akamaized.net"]},
+    {"id": "steam", "label": "Steam", "domains": ["+.steampowered.com", "+.steamcommunity.com", "+.steamcontent.com", "+.steamstatic.com", "+.steamusercontent.com", "+.steamserver.net", "+.steam-chat.com"]},
+    {"id": "tiktok", "label": "TikTok", "domains": ["+.tiktok.com", "+.tiktokcdn.com", "+.tiktokcdn-eu.com", "+.tiktokcdn-us.com", "+.tiktokv.com", "+.tiktokv.eu", "+.tiktokv.us", "+.tiktok-row.net", "+.tiktokrow-cdn.com", "+.tiktokw.eu", "+.tiktokw.us"]},
+    {"id": "twitch", "label": "Twitch", "domains": ["+.twitch.tv", "+.ttvnw.net", "+.jtvnw.net", "+.twitchcdn.net", "+.twitchsvc.net", "+.ext-twitch.tv", "+.live-video.net"]},
+    {"id": "whatsapp", "label": "WhatsApp", "domains": ["+.whatsapp.com", "+.whatsapp.net", "+.wa.me"]},
     {"id": "wikipedia", "label": "Wikipedia", "domains": ["+.wikipedia.org", "+.wikimedia.org"]},
-    {"id": "openstreetmap", "label": "OpenStreetMap", "domains": ["+.openstreetmap.org"]}
+    {"id": "x", "label": "X (Twitter)", "domains": ["+.x.com", "+.twitter.com", "+.twimg.com", "t.co"]},
+    {"id": "zoom", "label": "Zoom", "domains": ["+.zoom.us", "+.zoom.com"]}
   ]
 }

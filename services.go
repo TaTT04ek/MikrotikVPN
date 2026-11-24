@@ -99,11 +99,12 @@ func (m *manager) importServices(ctx context.Context, definitions []serviceDefin
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if len(m.current.Services)+len(definitions) > 64 {
+	if len(definitions) > 64 {
 		return errors.New("можно сохранить до 64 пользовательских сервисов")
 	}
 	next := m.current
 	next.Services = slices.Clone(next.Services)
+	ids := make(map[string]bool, len(definitions))
 	for i, d := range definitions {
 		d.ID = strings.TrimSpace(d.ID)
 		d.Label = strings.TrimSpace(d.Label)
@@ -111,9 +112,10 @@ func (m *manager) importServices(ctx context.Context, definitions []serviceDefin
 			len(d.Domains) == 0 || len(d.Domains) > 200 {
 			return fmt.Errorf("проверьте идентификатор, название и список доменов сервиса №%d", i+1)
 		}
-		if _, exists := findService(d.ID, next.Services...); exists {
+		if _, builtin := findService(d.ID); builtin || ids[d.ID] {
 			return fmt.Errorf("идентификатор %q уже используется", d.ID)
 		}
+		ids[d.ID] = true
 		d.Domains = slices.Clone(d.Domains)
 		seen := make(map[string]bool)
 		for j, entry := range d.Domains {
@@ -125,7 +127,21 @@ func (m *manager) importServices(ctx context.Context, definitions []serviceDefin
 			seen[entry] = true
 			d.Domains[j] = entry
 		}
+		index := slices.IndexFunc(m.current.Services, func(saved serviceDefinition) bool { return saved.ID == d.ID })
+		if index >= 0 {
+			saved := m.current.Services[index]
+			if saved.Label != d.Label || !slices.Equal(saved.Domains, d.Domains) {
+				return fmt.Errorf("сервис %q уже есть в каталоге с другим названием или доменами", d.ID)
+			}
+			continue
+		}
+		if len(next.Services) >= 64 {
+			return errors.New("можно сохранить до 64 пользовательских сервисов")
+		}
 		next.Services = append(next.Services, d)
+	}
+	if len(next.Services) == len(m.current.Services) {
+		return nil
 	}
 	payload, err := json.Marshal(next)
 	if err != nil {

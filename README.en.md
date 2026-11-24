@@ -99,7 +99,11 @@ The **Network monitor** shows active exits and traffic on the container's networ
 
 **Discord.** The built-in domain set is available, and VPN connections to Discord can be intermittent. We plan to improve Discord compatibility in future releases.
 
-Use **Service catalog → Import JSON** to upload a [service pack](web/service-pack.json). Each service needs a unique `id`, a `label`, and a `domains` list. Use `example.org` for an exact match or `+.example.org` to include subdomains. After importing, select the services you need and save your routing rules.
+Download the [ready-to-import pack of 20 services](web/service-pack.json) and upload it under **Service catalog → Import JSON**. It includes ChatGPT, Claude, Instagram, WhatsApp, Signal, Twitch, Netflix, Spotify, Steam, and more. After importing, select the services you need and save your routing rules.
+
+In a custom pack, each service needs a unique `id`, a `label`, and a `domains` list. Use `example.org` for an exact match or `+.example.org` to include subdomains. Reimporting skips identical entries. If an existing ID has a different label or domain list, the panel rejects the pack and identifies the conflict.
+
+The pack matches traffic by domain. Calls and games may use additional IP-based connections. [Domain sources](https://github.com/v2fly/domain-list-community/tree/98c43cad27fa8f02043858763709fe4a95432ffb/data) · [ChatGPT network requirements](https://help.openai.com/en/articles/9247338-network-recommendations-for-chatgpt-errors-on-web-and-apps) · [Signal network requirements](https://support.signal.org/hc/en-us/articles/360007320291-Firewall-and-Internet-settings)
 
 To add a device after installation, put its address in the RouterOS client list. If you left the client field blank during installation, enable the marking rules after adding the device.
 

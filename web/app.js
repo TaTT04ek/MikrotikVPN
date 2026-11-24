@@ -287,7 +287,7 @@ el("service-file").addEventListener("change", async (event) => {
     el("service-search").value = "";
     showServiceChoices();
     updateOrder();
-    status.textContent = "Пакет добавлен в каталог";
+    status.textContent = "Сервисы из пакета доступны в каталоге";
   } catch (err) {
     status.textContent = err.message;
   } finally {
